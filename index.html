@@ -4,10 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#1e40af">
+<meta name="application-name" content="World Electronics">
 <title>World Electronics — Technology, made useful.</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self';">
+<meta name="description" content="Shop everyday electronics, get expert repair support, and find practical technology recommendations from World Electronics.">
+<link rel="canonical" href="/" id="canonicalUrl">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="World Electronics">
+<meta property="og:title" content="World Electronics — Technology, made useful.">
+<meta property="og:description" content="Shop everyday electronics, get expert repair support, and find practical technology recommendations.">
+<meta property="og:image" content="/og-image.svg">
+<meta name="google-site-verification" content="" id="googleVerification">
+<script type="application/ld+json" id="organizationSchema">{"@context":"https://schema.org","@type":"Organization","name":"World Electronics","url":"/","logo":"/favicon.svg","description":"Technology products and repair support."}</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
 <meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
+<meta http-equiv="Cross-Origin-Resource-Policy" content="same-origin">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -20,7 +34,7 @@
 <span class="logo">WE</span>
 <span>World Electronics</span>
 </a>
-<nav class="links" aria-label="Main navigation">
+<nav class="links" id="mainLinks" aria-label="Main navigation">
 <a href="#catalog">Shop</a>
 <a href="#services">Repairs</a>
 <a href="#passport">TechCare</a>
@@ -36,10 +50,14 @@
 <button class="iconbtn" id="compareNav" aria-label="Open comparison">⇄ <span id="compareCount">0</span>
 </button>
 <button class="btn small outline" id="adminEntry">Admin</button>
-<button class="iconbtn hamb" id="menuToggle" aria-label="More links">☰</button>
+<button class="iconbtn" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false">☾</button>
+<button class="iconbtn hamb" id="menuToggle" aria-label="Open navigation menu" aria-controls="mainLinks" aria-expanded="false">☰</button>
 </div>
 </header>
+<a class="skip-link" href="#mainContent">Skip to content</a>
+<div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 <main id="storeView">
+<div id="mainContent">
 <section class="hero" id="home">
 <div class="wrap">
 <div class="hero-grid">
@@ -89,6 +107,7 @@
 </section>
 <section id="catalog">
 <div class="wrap">
+<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="#home">Home</a><span aria-hidden="true">›</span><span aria-current="page">Shop</span></nav>
 <div class="section-head">
 <div>
 <div class="eyebrow">Curated for everyday life</div>
@@ -126,7 +145,7 @@
 </select>
 </div>
 <div class="field">
-<label>Price range (<span id="currencyLabel">USD</span>)</label>
+<label>Price range (<span id="currencyLabel">NPR</span>)</label>
 <div class="range-row">
 <input id="minPrice" type="number" min="0" placeholder="Min" aria-label="Minimum price">
 <input id="maxPrice" type="number" min="0" placeholder="Max" aria-label="Maximum price">
@@ -157,11 +176,19 @@
 <div id="activeChips" class="filterchips">
 </div>
 <div id="productGrid" class="grid" aria-live="polite">
+<article class="card server-card"><div class="product-art"><span class="emoji-art" aria-hidden="true">💻</span></div><div class="card-body"><div class="meta">Acer · Aspire 5 A515</div><h3>Everyday Student Laptop</h3><p>Dependable laptop for study and everyday tasks.</p><a class="btn outline" href="#services">Ask about products</a></div></article>
+<article class="card server-card"><div class="product-art"><span class="emoji-art" aria-hidden="true">📱</span></div><div class="card-body"><div class="meta">Samsung · Galaxy S24</div><h3>Pro Camera Smartphone</h3><p>Premium everyday phone with a vivid display and capable camera.</p><a class="btn outline" href="#services">Ask about products</a></div></article>
+<article class="card server-card"><div class="product-art"><span class="emoji-art" aria-hidden="true">📺</span></div><div class="card-body"><div class="meta">LG · UQ75 55-inch</div><h3>4K Smart Television</h3><p>Crisp 4K entertainment with built-in streaming apps.</p><a class="btn outline" href="#services">Ask about products</a></div></article>
 </div>
 </div>
 </div>
 </div>
 </section>
+<section class="faq" id="faq"><div class="wrap"><div class="eyebrow">Helpful answers</div><h2>Frequently asked questions</h2>
+<details><summary>Are the prices and stock live?</summary><p>No. This storefront uses sample catalog data. Contact the store to confirm current availability and pricing.</p></details>
+<details><summary>Can I request a repair?</summary><p>Yes. Use the support request form and include your device and issue. Requests are saved for the store to review.</p></details>
+<details><summary>What information does this site store?</summary><p>The demo keeps catalog changes, preferences, and saved inquiries in this browser. See the <a href="privacy.html">Privacy Policy</a>.</p></details>
+</div></section>
 <section class="features" id="techmatch">
 <div class="wrap">
 <div class="section-head">
@@ -189,9 +216,9 @@
 <div class="field">
 <label for="matchBudget">Your budget</label>
 <select id="matchBudget">
-<option value="800">Up to $800</option>
-<option value="1500">Up to $1,500</option>
-<option value="3000">Up to $3,000</option>
+<option value="800">Up to NPR 800</option>
+<option value="1500">Up to NPR 1,500</option>
+<option value="3000">Up to NPR 3,000</option>
 <option value="999999">Flexible budget</option>
 </select>
 </div>
@@ -245,9 +272,10 @@
 <section id="trust" style="padding-top:0">
 <div class="wrap">
 <div class="banner">
-<strong>About this demo:</strong> Products, prices, stock, and inquiries are illustrative and stored in this browser. This prototype does not represent live store inventory or a real service booking. WhatsApp, Maps, and cross-device sync require your own configured details.</div>
+<strong>About this demo:</strong> Products, prices, and stock are illustrative. Catalog edits and preferences are kept in this browser. Support requests are sent to the demo server and held temporarily in memory; they are not a booking or live inventory request.</div>
 </div>
 </section>
+</div>
 </main>
 <main id="adminView" class="hidden">
 <div class="adminbar">
@@ -397,25 +425,8 @@
 </div>
 </div>
 <div class="panel" style="margin-top:16px">
-<h3>Admin Security & Authentication</h3>
-<p>Change your administrator PIN. All credentials are protected with PBKDF2-SHA256 (100,000 rounds) and a cryptographic salt.</p>
-<form id="changePinForm" class="adminform">
-<div class="field">
-<label for="currentPin">Current PIN</label>
-<input id="currentPin" type="password" required autocomplete="current-password">
-</div>
-<div class="field">
-<label for="newPin">New PIN (minimum 4 characters)</label>
-<input id="newPin" type="password" minlength="4" maxlength="32" required autocomplete="new-password">
-</div>
-<div class="field">
-<label for="confirmPin">Confirm New PIN</label>
-<input id="confirmPin" type="password" minlength="4" maxlength="32" required autocomplete="new-password">
-</div>
-<div class="form-actions wide">
-<button class="btn primary" type="submit">Update Admin PIN</button>
-</div>
-</form>
+<h3>Admin sign-in security</h3>
+<p>Admin access is checked by the server. Configure an scrypt password hash and TOTP secret through deployment environment variables. The browser does not store administrator passwords or session tokens.</p>
 </div>
 <div class="panel" style="margin-top:16px">
 <h3>Data portability & recovery</h3>
@@ -426,7 +437,7 @@
 <input id="importFile" type="file" accept="application/json,.json" class="hidden">
 <button class="btn danger" id="resetData">Reset demo data</button>
 </div>
-<div class="banner">Admin operations are secured with PBKDF2-SHA256 password hashing, brute-force rate-limiting, and ephemeral authenticated sessions. LocalStorage sync is validated against strict schemas. Credentials are automatically redacted during data export.</div>
+<div class="banner">Admin sign-in uses server-side scrypt verification, rate limits, a Secure HttpOnly session cookie, CSRF protection, and optional server-configured TOTP. Catalog and preference data in this demo remain browser-local.</div>
 </div>
 </div>
 </div>
@@ -436,13 +447,24 @@
 <footer class="footer">
 <div class="wrap footergrid">
 <div>
-<strong>World Electronics</strong>
+<a class="footer-brand" href="#home"><strong>World Electronics</strong></a>
 <p>Technology, made useful.</p>
+<div id="footerContact" class="footer-contact"></div>
 </div>
-<div class="notice">Illustrative demo data only. No live inventory or prices are represented. Local browser storage is not a secure database. Store contact, hours, address, and messaging details are configurable in the admin settings.</div>
-<button class="btn small" id="footerAdmin">Admin portal</button>
+<div class="notice">Illustrative demo data only. No live inventory or prices are represented. Store contact, hours, address, and messaging details are configurable in admin settings.</div>
+<div class="footer-links"><a href="#catalog">Shop</a><a href="#services">Repairs</a><a href="#passport">TechCare</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><button class="btn small" id="footerAdmin">Admin portal</button></div>
 </div>
+<div class="wrap copyright">© <span id="copyrightYear"></span> World Electronics</div>
+<button class="btn outline small" id="copyPageLink" type="button">Copy page link</button>
 </footer>
+<div class="cookie-banner" id="cookieBanner" role="region" aria-label="Privacy preferences" hidden>
+<p>We use essential browser storage to remember your demo catalog and preferences. Optional analytics are off unless you enable them.</p>
+<button class="btn outline small" id="cookieDecline">Essential only</button><button class="btn primary small" id="cookieAccept">Allow analytics</button>
+</div>
+<button class="back-top" id="backToTop" aria-label="Back to top">↑</button>
+<a class="floating-contact" href="#services" aria-label="Contact support">Contact</a>
+<div class="loading-indicator" id="loadingIndicator" hidden aria-label="Loading"><span></span><span></span><span></span></div>
+<dialog id="confirmDialog"><div class="modalhead"><h2>Confirm action</h2><button class="iconbtn" type="button" data-close="confirmDialog" aria-label="Close">✕</button></div><div class="modalbody"><p id="confirmMessage"></p><div class="form-actions"><button class="btn outline" type="button" data-close="confirmDialog">Cancel</button><button class="btn danger" id="confirmActionButton" type="button">Confirm</button></div></div></dialog>
 <div class="toaststack" id="toastStack" aria-live="polite" aria-atomic="false">
 </div>
 <dialog id="pinDialog">
@@ -451,19 +473,32 @@
 <button class="iconbtn" data-close="pinDialog" aria-label="Close">✕</button>
 </div>
 <form id="pinForm" class="modalbody">
-<p>Enter your administrator PIN to open store management.</p>
+<div id="pinStep">
+<p>Enter your administrator password to open store management.</p>
 <div id="pinLockoutBanner" class="banner" style="display:none;margin-bottom:14px;background:#fee2e2;color:#991b1b;border-color:#fca5a5;"></div>
 <div class="field">
-<label for="pinInput">Administrator PIN</label>
+<label for="pinInput">Administrator password</label>
 <div style="display:flex;gap:8px">
-<input id="pinInput" class="control" type="password" inputmode="numeric" autocomplete="off" required>
+<input id="pinInput" class="control" type="password" autocomplete="current-password" required>
 <button class="btn outline" type="button" id="pinToggle">Show</button>
 </div>
-<div class="notice" id="pinNotice">Default PIN is 1234. Protected with PBKDF2 hashing, progressive delay, lockout protection, and active session management.</div>
+<div class="notice" id="pinNotice">Sign-in is verified by the server. If access is not configured, contact the site operator.</div>
 </div>
 <div class="form-actions">
 <button type="button" class="btn outline" data-close="pinDialog">Cancel</button>
 <button class="btn primary" id="pinSubmitBtn" type="submit">Enter admin</button>
+</div>
+</div>
+<div id="mfaStep" style="display:none">
+<p>Two-factor authentication is required. Enter the 6-digit code from your authenticator app.</p>
+<div class="field">
+<label for="mfaInput">MFA Verification Code</label>
+<input id="mfaInput" class="control" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="6-digit code" required>
+</div>
+<div class="form-actions">
+<button type="button" class="btn outline" id="mfaBackBtn">Back</button>
+<button class="btn primary" id="mfaSubmitBtn" type="button">Verify & Enter</button>
+</div>
 </div>
 </form>
 </dialog>
@@ -497,7 +532,8 @@
 <button class="iconbtn" data-close="inquiryDialog" aria-label="Close">✕</button>
 </div>
 <form id="inquiryForm" class="modalbody">
-<div class="banner">A local demonstration request will appear in the Admin portal. No message is sent automatically.</div>
+<div class="banner">Your request will be sent to this demo server for the store to review. Do not include payment or sensitive information.</div>
+<div id="inquiryStatus" class="form-status" aria-live="polite"></div>
 <div class="adminform">
 <div class="field">
 <label for="inqName">Your name</label>

@@ -4,7 +4,9 @@
   "description": "World Electronics client-side storefront and administration portal",
   "private": true,
   "scripts": {
+    "start": "node server.js",
     "test": "node tests/security_audit.test.mjs",
-    "check": "node -c app.js"
+    "check": "node -c app.js",
+    "audit": "npm audit"
   }
 }

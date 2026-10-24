@@ -55,18 +55,10 @@ const seedServices = [
   { id: 'svc-general', name: 'General Electronics Support', type: 'Consultation', price: 35, description: 'Friendly help with setup, connectivity, and everyday technology questions.', published: true }
 ];
 
-// PBKDF2 hash of default demo PIN '1234' with pre-seeded salt
-const DEFAULT_AUTH = Object.freeze({
-  hash: 'f0ed1009c9701369282e45a7cc0934c5d5af2b82d4fea6f50b439db6f10c529b',
-  salt: 'c3b9e4a1f8d2705e6b1a3d9f2e4c8b0a',
-  iterations: 100000,
-  algo: 'PBKDF2-SHA256'
-});
-
 const defaults = Object.freeze({
   storeName: 'World Electronics',
-  currency: 'USD',
-  locale: 'en-US',
+  currency: 'NPR',
+  locale: 'en-NP',
   email: '',
   phone: '',
   whatsapp: '',
@@ -83,7 +75,6 @@ const defaults = Object.freeze({
     sun: null
   }),
   lowStock: 4,
-  auth: { ...DEFAULT_AUTH },
   broadcast: true,
   activityLimit: 50,
   servicesDefault: 'By appointment',
@@ -124,14 +115,56 @@ const Security = {
   },
 
   /**
-   * Safe URL validation: restricts protocol strictly to https: or http:
+   * SSRF Protection: Blocks loopback, private networks (RFC 1918),
+   * cloud metadata (169.254.169.254, AWS/GCP/Azure), IPv6 private, and non-standard IPs.
+   */
+  isSSRFSafeURL(v) {
+    if (!v || typeof v !== 'string') return false;
+    try {
+      const u = new URL(v.trim());
+      if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+      let host = u.hostname.toLowerCase();
+      if (!host) return false;
+      if (host.startsWith('[') && host.endsWith(']')) host = host.slice(1, -1);
+
+      const blockedHosts = ['localhost', 'metadata.google.internal', 'instance-data', '169.254.169.254'];
+      if (blockedHosts.includes(host) || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) {
+        return false;
+      }
+      if (host === '::1' || host === '::' || host.startsWith('fe80:') || host.startsWith('fc00:') || host.startsWith('fd')) {
+        return false;
+      }
+      if (/^\d+$/.test(host) || /^0x[0-9a-f]+$/i.test(host)) return false;
+
+      const ipv4Parts = host.split('.').map(Number);
+      if (ipv4Parts.length === 4 && ipv4Parts.every(n => Number.isInteger(n) && n >= 0 && n <= 255)) {
+        const [a, b] = ipv4Parts;
+        if (a === 0 || a === 127) return false; // Loopback
+        if (a === 10) return false; // 10.0.0.0/8
+        if (a === 172 && b >= 16 && b <= 31) return false; // 172.16.0.0/12
+        if (a === 192 && b === 168) return false; // 192.168.0.0/16
+        if (a === 169 && b === 254) return false; // Link-local & cloud metadata
+        if (a === 100 && b >= 64 && b <= 127) return false; // Carrier-grade NAT
+        if (a >= 224) return false; // Multicast & reserved
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Safe URL validation: restricts protocol strictly to https: or http: and enforces SSRF safety
    * Prevents javascript:, data:, blob:, file:, and control-character injection
    */
   safeURL(v) {
     if (!v || typeof v !== 'string') return '';
     try {
       const u = new URL(v.trim());
-      return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : '';
+      if ((u.protocol === 'https:' || u.protocol === 'http:') && this.isSSRFSafeURL(u.href)) {
+        return u.href;
+      }
+      return '';
     } catch {
       return '';
     }
@@ -220,6 +253,217 @@ const Security = {
       mismatch |= charA ^ charB;
     }
     return mismatch === 0;
+  },
+
+  /**
+   * Cryptographic Anti-CSRF Protection
+   */
+  _csrfToken: null,
+
+  generateCSRFToken() {
+    this._csrfToken = this.randomHex(32);
+    return this._csrfToken;
+  },
+
+  getCSRFToken() {
+    if (!this._csrfToken) {
+      this.generateCSRFToken();
+    }
+    return this._csrfToken;
+  },
+
+  verifyCSRFToken(token) {
+    if (!token || !this._csrfToken) return false;
+    return this.timingSafeEqual(String(token), this._csrfToken);
+  },
+
+  /**
+   * HMAC-SHA256 signature computation using Web Crypto API
+   */
+  async computeHmacSha256(keyStr, dataStr) {
+    const cryptoSubtle = (typeof window !== 'undefined' && window.crypto?.subtle) ||
+                         (typeof globalThis !== 'undefined' && globalThis.crypto?.subtle);
+    if (!cryptoSubtle) throw new Error('Web Cryptography API is unavailable.');
+    const enc = new TextEncoder();
+    const key = await cryptoSubtle.importKey('raw', enc.encode(keyStr), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const sig = await cryptoSubtle.sign('HMAC', key, enc.encode(dataStr));
+    return Array.from(new Uint8Array(sig), b => b.toString(16).padStart(2, '0')).join('');
+  },
+
+  /**
+   * Webhook Signature Verification with Replay Attack Prevention (toleranceSeconds)
+   */
+  async verifyWebhookSignature(payload, signatureHeader, secret, toleranceSeconds = 300) {
+    if (!payload || !signatureHeader || !secret) return false;
+    try {
+      if (signatureHeader.includes('t=') && signatureHeader.includes('v1=')) {
+        let timestamp = null;
+        let expectedSig = '';
+        const parts = signatureHeader.split(',');
+        for (const p of parts) {
+          const [k, v] = p.trim().split('=');
+          if (k === 't') timestamp = parseInt(v, 10);
+          if (k === 'v1') expectedSig = v;
+        }
+        if (!timestamp || !expectedSig) return false;
+        const nowSec = Math.floor(Date.now() / 1000);
+        if (Math.abs(nowSec - timestamp) > toleranceSeconds) {
+          return false; // Replay attack prevented
+        }
+        const dataToSign = `${timestamp}.${payload}`;
+        const actualSig = await this.computeHmacSha256(secret, dataToSign);
+        return this.timingSafeEqual(actualSig, expectedSig);
+      } else {
+        const rawSig = signatureHeader.startsWith('sha256=') ? signatureHeader.slice(7) : signatureHeader;
+        const actualSig = await this.computeHmacSha256(secret, payload);
+        return this.timingSafeEqual(actualSig, rawSig);
+      }
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Multi-Factor Authentication: RFC 6238 Standard TOTP Implementation
+   */
+  TOTP: {
+    base32Alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',
+
+    base32Decode(str) {
+      const alphabet = this.base32Alphabet;
+      let bits = 0, value = 0;
+      const output = [];
+      const clean = String(str).toUpperCase().replace(/[^A-Z2-7]/g, '');
+      for (let i = 0; i < clean.length; i++) {
+        const idx = alphabet.indexOf(clean[i]);
+        if (idx === -1) continue;
+        value = (value << 5) | idx;
+        bits += 5;
+        if (bits >= 8) {
+          output.push((value >>> (bits - 8)) & 255);
+          bits -= 8;
+        }
+      }
+      return new Uint8Array(output);
+    },
+
+    base32Encode(bytes) {
+      const alphabet = this.base32Alphabet;
+      let bits = 0, value = 0, output = '';
+      for (let i = 0; i < bytes.length; i++) {
+        value = (value << 8) | bytes[i];
+        bits += 8;
+        while (bits >= 5) {
+          output += alphabet[(value >>> (bits - 5)) & 31];
+          bits -= 5;
+        }
+      }
+      if (bits > 0) {
+        output += alphabet[(value << (5 - bits)) & 31];
+      }
+      return output;
+    },
+
+    generateSecret(bytes = 20) {
+      const arr = new Uint8Array(bytes);
+      if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
+        window.crypto.getRandomValues(arr);
+      } else if (typeof globalThis !== 'undefined' && globalThis.crypto?.getRandomValues) {
+        globalThis.crypto.getRandomValues(arr);
+      } else {
+        for (let i = 0; i < bytes; i++) arr[i] = Math.floor(Math.random() * 256);
+      }
+      return this.base32Encode(arr);
+    },
+
+    async generateTOTP(secretBase32, timeSec = Math.floor(Date.now() / 1000)) {
+      const cryptoSubtle = (typeof window !== 'undefined' && window.crypto?.subtle) ||
+                           (typeof globalThis !== 'undefined' && globalThis.crypto?.subtle);
+      if (!cryptoSubtle) throw new Error('Web Cryptography API is unavailable.');
+      const keyBytes = this.base32Decode(secretBase32);
+      const counter = Math.floor(timeSec / 30);
+      const buffer = new ArrayBuffer(8);
+      const view = new DataView(buffer);
+      const high = Math.floor(counter / 0x100000000);
+      const low = counter >>> 0;
+      view.setUint32(0, high, false);
+      view.setUint32(4, low, false);
+
+      const key = await cryptoSubtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+      const signature = await cryptoSubtle.sign('HMAC', key, buffer);
+      const hmac = new Uint8Array(signature);
+      const offset = hmac[hmac.length - 1] & 0x0f;
+      const codeVal = ((hmac[offset] & 0x7f) << 24) |
+                      ((hmac[offset + 1] & 0xff) << 16) |
+                      ((hmac[offset + 2] & 0xff) << 8) |
+                      (hmac[offset + 3] & 0xff);
+      return String(codeVal % 1000000).padStart(6, '0');
+    },
+
+    async verifyTOTP(token, secretBase32, window = 1, timeSec = Math.floor(Date.now() / 1000)) {
+      if (!token || typeof token !== 'string') return false;
+      const cleanToken = token.trim().replace(/\s+/g, '');
+      if (!/^\d{6}$/.test(cleanToken)) return false;
+      for (let offset = -window; offset <= window; offset++) {
+        const stepTime = timeSec + (offset * 30);
+        const code = await this.generateTOTP(secretBase32, stepTime);
+        if (Security.timingSafeEqual(cleanToken, code)) {
+          return true;
+        }
+      }
+      return false;
+    },
+
+    generateRecoveryCodes(count = 8) {
+      const codes = [];
+      for (let i = 0; i < count; i++) {
+        const part1 = Security.randomHex(2).toUpperCase();
+        const part2 = Security.randomHex(2).toUpperCase();
+        codes.push(`${part1}-${part2}`);
+      }
+      return codes;
+    }
+  },
+
+  /**
+   * Log Sanitization: Automatically scrubs PII, credentials, tokens, and cards
+   */
+  redactSensitiveData(text) {
+    if (typeof text !== 'string') return text;
+    return text
+      .replace(/[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '[REDACTED_EMAIL]')
+      .replace(/\b\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4}\b/g, '[REDACTED_CARD]')
+      .replace(/(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{2,4}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{3,4}\b/g, '[REDACTED_PHONE]')
+      .replace(/(?:pin|token|jwt|password|secret|bearer|auth)[:=]\s*['"]?[a-zA-Z0-9_-]{4,}['"]?/gi, '[REDACTED_CREDENTIAL]');
+  },
+
+  /**
+   * Database Security & Parameterized Query Builder (SQL Injection Defense)
+   */
+  DatabaseSecurity: {
+    sanitizeIdentifier(ident) {
+      if (typeof ident !== 'string' || !/^[a-zA-Z_][a-zA-Z0-9_]{0,63}$/.test(ident)) {
+        throw new Error('Invalid SQL identifier detected: SQL injection blocked.');
+      }
+      return `"${ident.replace(/"/g, '""')}"`;
+    },
+
+    buildParameterizedQuery(table, filters = {}) {
+      const safeTable = this.sanitizeIdentifier(table);
+      const clauses = [];
+      const params = [];
+      let idx = 1;
+      for (const [col, val] of Object.entries(filters)) {
+        const safeCol = this.sanitizeIdentifier(col);
+        clauses.push(`${safeCol} = $${idx++}`);
+        params.push(val);
+      }
+      const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : '';
+      return {
+        sql: `SELECT * FROM ${safeTable}${where}`,
+        params
+      };
+    }
   }
 };
 
@@ -310,6 +554,50 @@ const Validator = {
     if (!Number.isInteger(s.lowStock) || s.lowStock < 1 || s.lowStock > 1000) return false;
     if (!Number.isInteger(s.activityLimit) || s.activityLimit < 5 || s.activityLimit > 500) return false;
     return true;
+  },
+
+  /**
+   * File Upload Validation (Extension, MIME type, Size, and Content Safety)
+   */
+  validateFileUpload(file, options = {}) {
+    if (!file || typeof file !== 'object') {
+      return { valid: false, error: 'No file provided.' };
+    }
+    const maxSize = options.maxSize || CONFIG.maxImportBytes;
+    if (file.size <= 0) {
+      return { valid: false, error: 'Empty file rejected.' };
+    }
+    if (file.size > maxSize) {
+      return { valid: false, error: `File exceeds maximum allowed size (${Math.round(maxSize / (1024 * 1024))} MB).` };
+    }
+    const name = String(file.name || '').toLowerCase();
+    const allowedExtensions = options.allowedExtensions || ['.json'];
+    const hasValidExt = allowedExtensions.some(ext => name.endsWith(ext));
+    if (!hasValidExt) {
+      return { valid: false, error: `Invalid file extension. Allowed: ${allowedExtensions.join(', ')}` };
+    }
+    const blockedExtensions = ['.html', '.htm', '.svg', '.js', '.mjs', '.php', '.exe', '.sh', '.bat', '.cmd'];
+    if (blockedExtensions.some(ext => name.endsWith(ext))) {
+      return { valid: false, error: 'Executable or script file type blocked.' };
+    }
+    if (file.type) {
+      const allowedMimes = options.allowedMimeTypes || ['application/json', 'text/json'];
+      if (!allowedMimes.includes(file.type.toLowerCase())) {
+        return { valid: false, error: `Invalid MIME type (${file.type}).` };
+      }
+    }
+    return { valid: true };
+  },
+
+  /**
+   * Password / PIN Strength Policy & Default Credential Prevention
+   */
+  isStrongPIN(pin) {
+    if (typeof pin !== 'string') return false;
+    if (pin.length < 6 || pin.length > 64) return false;
+    const weakList = ['1234', '123456', '000000', '111111', 'password', 'admin123', 'qwerty'];
+    if (weakList.includes(pin.toLowerCase())) return false;
+    return true;
   }
 };
 
@@ -317,11 +605,34 @@ const Validator = {
 const AuthService = {
   failedAttempts: 0,
   lockoutUntil: 0,
-  sessionToken: null,
+  sessionToken: null, // Strictly in-memory ephemeral token — NEVER stored in localStorage
   sessionExpires: 0,
+  csrfToken: null,
+  pendingAuth: null, // Ephemeral state between step 1 (PIN) and step 2 (MFA)
   SESSION_DURATION_MS: 15 * 60 * 1000, // 15-minute inactivity session timeout
   MAX_FAILED_ATTEMPTS: 5,
   LOCKOUT_DURATION_MS: 60 * 1000, // 60-second progressive lockout
+
+  purgeStorageTokens() {
+    if (typeof localStorage !== 'undefined') {
+      const keysToPurge = [
+        `${CONFIG.prefix}.authToken`,
+        `${CONFIG.prefix}.sessionToken`,
+        `${CONFIG.prefix}.jwt`,
+        `${CONFIG.prefix}.token`
+      ];
+      keysToPurge.forEach(k => {
+        try { localStorage.removeItem(k); } catch {}
+      });
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.removeItem(`${CONFIG.prefix}.authToken`);
+        sessionStorage.removeItem(`${CONFIG.prefix}.sessionToken`);
+        sessionStorage.removeItem(`${CONFIG.prefix}.jwt`);
+      } catch {}
+    }
+  },
 
   isLockedOut() {
     const now = Date.now();
@@ -332,42 +643,49 @@ const AuthService = {
   },
 
   async authenticate(enteredPin) {
-    const remainingSeconds = this.isLockedOut();
-    if (remainingSeconds > 0) {
-      return { success: false, lockedOut: true, seconds: remainingSeconds };
-    }
-
-    const auth = Store.data.settings.auth;
-    if (!auth || !auth.hash || !auth.salt) {
-      return { success: false, error: 'Authentication not properly initialized.' };
-    }
-
-    // Artificial slight delay to resist high-frequency brute-force scripting
-    await new Promise(r => setTimeout(r, 120));
-
+    this.purgeStorageTokens();
     try {
-      const enteredHash = await Security.hashPIN(enteredPin, auth.salt);
-      const valid = Security.timingSafeEqual(enteredHash, auth.hash);
-
-      if (valid) {
-        this.failedAttempts = 0;
-        this.lockoutUntil = 0;
-        this.sessionToken = Security.randomHex(32);
-        this.sessionExpires = Date.now() + this.SESSION_DURATION_MS;
-        return { success: true };
-      } else {
-        this.failedAttempts++;
-        if (this.failedAttempts >= this.MAX_FAILED_ATTEMPTS) {
-          this.lockoutUntil = Date.now() + this.LOCKOUT_DURATION_MS;
-          return { success: false, lockedOut: true, seconds: 60 };
-        }
-        return {
-          success: false,
-          remainingAttempts: this.MAX_FAILED_ATTEMPTS - this.failedAttempts
-        };
+      const response = await fetch('/api/auth/login', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: String(enteredPin || '') })
+      });
+      const result = await response.json();
+      if (!response.ok) return { success: false, error: result.error || 'Authentication failed.' };
+      if (result.requireMFA) {
+        this.pendingAuth = { pin: String(enteredPin || ''), expires: Date.now() + 5 * 60 * 1000 };
+        return { success: false, requireMFA: true };
       }
+      this.csrfToken = result.csrfToken || null;
+      this.sessionToken = 'server-cookie-session';
+      this.sessionExpires = Date.now() + this.SESSION_DURATION_MS;
+      this.failedAttempts = 0;
+      return { success: true };
     } catch {
-      return { success: false, error: 'Cryptographic verification failure.' };
+      return { success: false, error: 'Could not reach the secure sign-in service.' };
+    }
+  },
+
+  async verifyMFA(enteredCode) {
+    if (!this.pendingAuth || Date.now() > this.pendingAuth.expires) {
+      this.pendingAuth = null;
+      return { success: false, error: 'MFA session expired. Please enter PIN again.' };
+    }
+    try {
+      const response = await fetch('/api/auth/mfa', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: this.pendingAuth.pin, code: String(enteredCode || '') })
+      });
+      const result = await response.json();
+      if (!response.ok) return { success: false, error: result.error || 'Invalid verification code.' };
+      this.pendingAuth = null;
+      this.csrfToken = result.csrfToken || null;
+      this.sessionToken = 'server-cookie-session';
+      this.sessionExpires = Date.now() + this.SESSION_DURATION_MS;
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Could not reach the secure verification service.' };
     }
   },
 
@@ -382,9 +700,33 @@ const AuthService = {
     return true;
   },
 
+  checkPermission(permission) {
+    if (!this.isAuthenticated()) {
+      return false;
+    }
+    const allowedAdminPermissions = [
+      'read:inquiries',
+      'write:inquiries',
+      'write:inventory',
+      'write:services',
+      'write:settings',
+      'export:data',
+      'import:data',
+      'reset:data'
+    ];
+    return allowedAdminPermissions.includes(permission);
+  },
+
   logout() {
+    const csrfToken = this.csrfToken;
+    if (this.sessionToken && csrfToken) {
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRF-Token': csrfToken } }).catch(() => {});
+    }
     this.sessionToken = null;
+    this.csrfToken = null;
+    this.pendingAuth = null;
     this.sessionExpires = 0;
+    this.purgeStorageTokens();
     if (typeof document !== 'undefined') {
       const adminView = document.querySelector('#adminView');
       const storeView = document.querySelector('#storeView');
@@ -396,34 +738,6 @@ const AuthService = {
     }
   },
 
-  async updatePIN(currentPin, newPin) {
-    if (!this.isAuthenticated()) {
-      throw new Error('Unauthorized admin session.');
-    }
-    const auth = Store.data.settings.auth;
-    const currentHash = await Security.hashPIN(currentPin, auth.salt);
-    if (!Security.timingSafeEqual(currentHash, auth.hash)) {
-      throw new Error('Current PIN is incorrect.');
-    }
-    if (typeof newPin !== 'string' || newPin.length < 4 || newPin.length > 32) {
-      throw new Error('New PIN must be between 4 and 32 characters.');
-    }
-    if (newPin === '1234') {
-      throw new Error('Please choose a PIN stronger than the demo default 1234.');
-    }
-    const newSalt = Security.randomHex(16);
-    const newHash = await Security.hashPIN(newPin, newSalt);
-    Store.data.settings.auth = {
-      hash: newHash,
-      salt: newSalt,
-      iterations: 100000,
-      algo: 'PBKDF2-SHA256',
-      updatedAt: new Date().toISOString()
-    };
-    Store.log('Admin PIN securely updated');
-    Store.save('settings');
-    return true;
-  }
 };
 
 /* 5. Client-Side Abuse Prevention & Rate Limiter */
@@ -447,7 +761,7 @@ const Store = {
     products: [],
     services: [],
     inquiries: [],
-    settings: { ...defaults, auth: { ...DEFAULT_AUTH } },
+    settings: { ...defaults },
     activity: [],
     preferences: { wishlist: [], compare: [] }
   },
@@ -456,11 +770,12 @@ const Store = {
   channel: null,
 
   load() {
+    AuthService.purgeStorageTokens();
     let recovered = false;
     if (typeof localStorage === 'undefined') {
       this.data.products = structuredClone(seedProducts);
       this.data.services = structuredClone(seedServices);
-      this.data.settings = { ...defaults, auth: { ...DEFAULT_AUTH } };
+      this.data.settings = { ...defaults };
       return;
     }
     for (const [name, key] of Object.entries(keys)) {
@@ -470,18 +785,18 @@ const Store = {
           const parsed = JSON.parse(raw);
           if (name === 'settings' && parsed && typeof parsed === 'object') {
             const safeParsed = Security.deepCloneSafe(parsed);
-            // Migrate legacy plaintext PIN to PBKDF2 hash if needed
-            let auth = safeParsed.auth;
-            if (!auth && safeParsed.pin) {
-              auth = { ...DEFAULT_AUTH };
-            } else if (!auth) {
-              auth = { ...DEFAULT_AUTH };
+            // Move the original demo defaults to the requested Nepalese rupee display.
+            if (safeParsed.currency === 'USD' && (!safeParsed.locale || safeParsed.locale === 'en-US')) {
+              safeParsed.currency = 'NPR';
+              safeParsed.locale = 'en-NP';
             }
-            delete safeParsed.pin; // Erase any plaintext PIN
+            // The server owns authentication; remove old browser-stored PIN hashes and MFA secrets.
+            delete safeParsed.auth;
+            delete safeParsed.pin;
+            try { localStorage.setItem(`${CONFIG.prefix}.${key}`, JSON.stringify(safeParsed)); } catch {}
             this.data.settings = {
               ...defaults,
               ...safeParsed,
-              auth,
               hours: { ...defaults.hours, ...(safeParsed.hours || {}) }
             };
           } else if (Array.isArray(parsed)) {
@@ -509,7 +824,7 @@ const Store = {
     if (recovered && (!this.data.products.length || !this.data.services.length)) {
       this.data.products = structuredClone(seedProducts);
       this.data.services = structuredClone(seedServices);
-      this.data.settings = { ...defaults, auth: { ...DEFAULT_AUTH } };
+      this.data.settings = { ...defaults };
       this.log('Demo data initialized with secure defaults');
       this.saveAll(false);
     }
@@ -519,6 +834,10 @@ const Store = {
     if (typeof localStorage === 'undefined') return;
     try {
       const sanitized = Security.deepCloneSafe(this.data[name]);
+      if (name === 'settings' && sanitized && typeof sanitized === 'object') {
+        delete sanitized.auth;
+        delete sanitized.pin;
+      }
       localStorage.setItem(`${CONFIG.prefix}.${keys[name]}`, JSON.stringify(sanitized));
     } catch (e) {
       Toast.show('Browser storage is full or restricted. Changes could not persist.', 'error');
@@ -554,8 +873,25 @@ const Store = {
     } catch {}
   },
 
+  getInquiries() {
+    // Row-level security: only authenticated admin sessions can access customer inquiries
+    if (!AuthService.isAuthenticated()) {
+      return [];
+    }
+    return this.data.inquiries;
+  },
+
+  getPublishedProducts() {
+    return this.data.products.filter(p => p.published !== false);
+  },
+
+  getPublishedServices() {
+    return this.data.services.filter(s => s.published !== false);
+  },
+
   log(action) {
-    const cleanAction = Security.safeText(action, 150);
+    const sanitized = Security.redactSensitiveData(String(action || ''));
+    const cleanAction = Security.safeText(sanitized, 150);
     this.data.activity.unshift({
       id: uid(),
       action: cleanAction,
@@ -580,7 +916,6 @@ const Store = {
           this.data.settings = {
             ...defaults,
             ...safeVal,
-            auth: this.data.settings.auth,
             hours: { ...defaults.hours, ...(safeVal.hours || {}) }
           };
           return true;
@@ -609,13 +944,11 @@ const Store = {
       Toast.show('Unauthorized: Admin session required to reset data.', 'error');
       return;
     }
-    // Preserve current admin auth credentials during demo reset so user is not locked out
-    const currentAuth = this.data.settings.auth;
     this.data = {
       products: structuredClone(seedProducts),
       services: structuredClone(seedServices),
       inquiries: [],
-      settings: { ...defaults, auth: currentAuth, hours: structuredClone(defaults.hours) },
+      settings: { ...defaults, hours: structuredClone(defaults.hours) },
       activity: [],
       preferences: { wishlist: [], compare: [] }
     };
@@ -633,8 +966,8 @@ const escapeHTML = s => Security.escapeHTML(s);
  * Strictly prevents unescaped characters or injection
  */
 const money = n => {
-  const safeCurrency = Validator.isValidCurrency(Store.data.settings.currency) ? Store.data.settings.currency : 'USD';
-  const safeLocale = Validator.isValidLocale(Store.data.settings.locale) ? Store.data.settings.locale : 'en-US';
+  const safeCurrency = Validator.isValidCurrency(Store.data.settings.currency) ? Store.data.settings.currency : 'NPR';
+  const safeLocale = Validator.isValidLocale(Store.data.settings.locale) ? Store.data.settings.locale : 'en-NP';
   try {
     return new Intl.NumberFormat(safeLocale, {
       style: 'currency',
@@ -750,7 +1083,6 @@ const SyncEngine = {
         Store.data.settings = {
           ...Store.data.settings,
           ...safeData,
-          auth: Store.data.settings.auth
         };
         try {
           localStorage.setItem(`${CONFIG.prefix}.settings`, JSON.stringify(Store.data.settings));
@@ -868,6 +1200,28 @@ const UI = {
     this.renderPreferences();
     SyncEngine.status();
     this.updateHours();
+    this.renderFooter();
+  },
+
+  renderFooter() {
+    const host = document.querySelector('#footerContact');
+    const year = document.querySelector('#copyrightYear');
+    if (year) year.textContent = String(new Date().getFullYear());
+    if (!host) return;
+    const { email, phone } = Store.data.settings;
+    host.replaceChildren();
+    if (phone) {
+      const link = document.createElement('a');
+      link.href = `tel:${phone.replace(/[^+\d]/g, '')}`;
+      link.textContent = phone;
+      host.append(link);
+    }
+    if (email) {
+      const link = document.createElement('a');
+      link.href = `mailto:${email}`;
+      link.textContent = email;
+      host.append(link);
+    }
   },
 
   renderProducts() {
@@ -930,7 +1284,7 @@ const UI = {
 
     el.innerHTML = `
       <div class="product-art">
-        ${img ? `<img src="${escapeHTML(img)}" alt="${safeName}" loading="lazy">` : `<span class="emoji-art" aria-hidden="true">${safeIcon}</span>`}
+        ${img ? `<img src="${escapeHTML(img)}" alt="${safeName}" loading="lazy" decoding="async">` : `<span class="emoji-art" aria-hidden="true">${safeIcon}</span>`}
         <span class="badge">${safeCategory}</span>
         ${p.featured ? '<span class="badge featured">★ Featured</span>' : ''}
       </div>
@@ -1242,6 +1596,22 @@ function openDialog(id) {
 
 function closeDialog(id) {
   document.getElementById(id)?.close();
+}
+
+function confirmAction(message) {
+  const dialog = document.querySelector('#confirmDialog');
+  const confirmButton = document.querySelector('#confirmActionButton');
+  const messageEl = document.querySelector('#confirmMessage');
+  if (!dialog || !confirmButton || !messageEl) return Promise.resolve(false);
+  messageEl.textContent = message;
+  dialog.returnValue = '';
+  return new Promise(resolve => {
+    const finish = value => { dialog.close(); resolve(value); };
+    const onClose = () => resolve(dialog.returnValue === 'confirm');
+    dialog.addEventListener('close', onClose, { once: true });
+    confirmButton.onclick = () => { dialog.returnValue = 'confirm'; finish(true); };
+    dialog.showModal();
+  });
 }
 
 /* 10. Admin Controller & Protected Management Operations */
@@ -1722,11 +2092,24 @@ const Admin = {
 };
 
 /* 11. Event Wiring, Dialog Management, and Input Guards */
-function showAdmin() {
+async function showAdmin() {
+  try {
+    const response = await fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' });
+    const status = response.ok ? await response.json() : null;
+    if (!status?.authenticated) {
+      AuthService.logout();
+      Toast.show('Your secure admin session is missing or expired. Please sign in again.', 'error');
+      return false;
+    }
+  } catch {
+    Toast.show('Could not verify your admin session with the server.', 'error');
+    return false;
+  }
   document.querySelector('#storeView').classList.add('hidden');
   document.querySelector('#adminView').classList.remove('hidden');
   Admin.render();
   window.scrollTo(0, 0);
+  return true;
 }
 
 function setFilter(key, value) {
@@ -1753,6 +2136,13 @@ function requestAdmin() {
   }
   const pinInput = document.querySelector('#pinInput');
   if (pinInput) pinInput.value = '';
+  const mfaInput = document.querySelector('#mfaInput');
+  if (mfaInput) mfaInput.value = '';
+  const pinStep = document.querySelector('#pinStep');
+  const mfaStep = document.querySelector('#mfaStep');
+  if (pinStep) pinStep.style.display = 'block';
+  if (mfaStep) mfaStep.style.display = 'none';
+
   const lockoutBanner = document.querySelector('#pinLockoutBanner');
   if (lockoutBanner) {
     const lockedSeconds = AuthService.isLockedOut();
@@ -1795,6 +2185,13 @@ document.querySelector('#pinForm').onsubmit = async e => {
       if (lockoutBanner) lockoutBanner.style.display = 'none';
       showAdmin();
       Toast.show('Authenticated as administrator');
+    } else if (res.requireMFA) {
+      const pinStep = document.querySelector('#pinStep');
+      const mfaStep = document.querySelector('#mfaStep');
+      if (pinStep) pinStep.style.display = 'none';
+      if (mfaStep) mfaStep.style.display = 'block';
+      setTimeout(() => document.querySelector('#mfaInput')?.focus(), 50);
+      Toast.show('Please enter your 2-factor authentication code.');
     } else if (res.lockedOut) {
       if (lockoutBanner) {
         lockoutBanner.style.display = 'block';
@@ -1802,12 +2199,41 @@ document.querySelector('#pinForm').onsubmit = async e => {
       }
       Toast.show(`Account locked for ${res.seconds} seconds.`, 'error');
     } else {
-      Toast.show(`Incorrect PIN. ${res.remainingAttempts} attempt(s) remaining.`, 'error');
+      Toast.show(res.error || `Incorrect password. ${res.remainingAttempts ?? ''} ${res.remainingAttempts ? 'attempt(s) remaining.' : ''}`, 'error');
     }
   } finally {
     if (pinSubmitBtn) pinSubmitBtn.disabled = false;
   }
 };
+
+document.querySelector('#mfaSubmitBtn')?.addEventListener('click', async () => {
+  const mfaInput = document.querySelector('#mfaInput');
+  const mfaBtn = document.querySelector('#mfaSubmitBtn');
+  if (!mfaInput) return;
+  if (mfaBtn) mfaBtn.disabled = true;
+  try {
+    const res = await AuthService.verifyMFA(mfaInput.value);
+    if (res.success) {
+      closeDialog('pinDialog');
+      mfaInput.value = '';
+      document.querySelector('#pinInput').value = '';
+      showAdmin();
+      Toast.show(res.usedRecoveryCode ? `Authenticated with recovery code (${res.remainingCodes} left)` : 'MFA verified: Authenticated as administrator');
+    } else {
+      Toast.show(res.error || 'Invalid verification code.', 'error');
+    }
+  } finally {
+    if (mfaBtn) mfaBtn.disabled = false;
+  }
+});
+
+document.querySelector('#mfaBackBtn')?.addEventListener('click', () => {
+  const pinStep = document.querySelector('#pinStep');
+  const mfaStep = document.querySelector('#mfaStep');
+  if (pinStep) pinStep.style.display = 'block';
+  if (mfaStep) mfaStep.style.display = 'none';
+  AuthService.pendingAuth = null;
+});
 
 ['adminEntry', 'footerAdmin'].forEach(id => {
   const el = document.getElementById(id);
@@ -1924,7 +2350,7 @@ document.querySelector('#passportBtn').onclick = () => {
 };
 
 // Customer Inquiry Submission with Rate Limiting & Input Validation
-document.querySelector('#inquiryForm').onsubmit = e => {
+document.querySelector('#inquiryForm').onsubmit = async e => {
   e.preventDefault();
   if (InquiryLimiter.isRateLimited()) {
     Toast.show('You have submitted multiple requests recently. Please wait a minute before trying again.', 'error');
@@ -1949,21 +2375,44 @@ document.querySelector('#inquiryForm').onsubmit = e => {
     return;
   }
 
+  const status = document.querySelector('#inquiryStatus');
+  const submit = e.currentTarget.querySelector('button[type="submit"],button:not([type])');
+  const loader = document.querySelector('#loadingIndicator');
+  if (submit) submit.disabled = true;
+  if (loader) loader.hidden = false;
+  if (status) { status.className = 'form-status'; status.textContent = 'Sending your request…'; }
+  try {
+    const response = await fetch('/api/inquiries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: inquiry.name, contact: inquiry.contact, type: inquiry.type, message: inquiry.message, utm: (() => { try { return JSON.parse(sessionStorage.getItem('we.utm') || '{}'); } catch { return {}; } })() })
+    });
+    if (!response.ok) throw new Error('The request could not be sent. Please try again shortly.');
+  } catch (error) {
+    if (loader) loader.hidden = true;
+    if (status) { status.className = 'form-status error'; status.textContent = error.message || 'Connection problem. Please try again.'; }
+    Toast.show('Your request could not be sent. Please try again.', 'error');
+    if (submit) submit.disabled = false;
+    return;
+  }
+  if (loader) loader.hidden = true;
   Store.data.inquiries.unshift(inquiry);
   // Cap stored inquiries to prevent quota exhaustion
   if (Store.data.inquiries.length > 200) {
     Store.data.inquiries = Store.data.inquiries.slice(0, 200);
   }
-  Store.log(`New inquiry received from ${inquiry.name}`);
+  Store.log('New customer inquiry submitted');
   Store.save('inquiries');
   e.currentTarget.reset();
+  if (status) { status.className = 'form-status success'; status.textContent = 'Thanks. Your request was sent successfully.'; }
+  Toast.show('Your request was sent successfully.');
   closeDialog('inquiryDialog');
-  Toast.show('Your demo inquiry was saved. The team can review it in Admin.');
+  if (submit) submit.disabled = false;
   UI.renderCounts();
 };
 
 // Admin Section Switching
-document.querySelector('#adminView').addEventListener('click', e => {
+document.querySelector('#adminView').addEventListener('click', async e => {
   const tab = e.target.closest('[data-admin-tab]');
   if (tab) {
     document.querySelectorAll('[data-admin-tab]').forEach(x => x.classList.toggle('active', x === tab));
@@ -2010,7 +2459,7 @@ document.querySelector('#productTable').addEventListener('change', e => {
 });
 
 // Admin actions delegation
-document.querySelector('#adminView').addEventListener('click', e => {
+document.querySelector('#adminView').addEventListener('click', async e => {
   const b = e.target.closest('[data-admin-action]');
   if (!b) return;
   if (!AuthService.isAuthenticated()) {
@@ -2022,8 +2471,8 @@ document.querySelector('#adminView').addEventListener('click', e => {
   if (a === 'editProduct') {
     Admin.productForm(Store.data.products.find(p => p.id === id));
   }
-  if (a === 'deleteProduct' && confirm('Delete this product from the local catalog?')) {
-    InventoryService.remove(id);
+  if (a === 'deleteProduct') {
+    if (await confirmAction('Delete this product from the local catalog?')) InventoryService.remove(id);
   }
   if (a === 'feature') {
     const p = Store.data.products.find(x => x.id === id);
@@ -2044,15 +2493,19 @@ document.querySelector('#adminView').addEventListener('click', e => {
       Store.save('services');
     }
   }
-  if (a === 'deleteService' && confirm('Delete this service?')) {
-    Store.data.services = Store.data.services.filter(s => s.id !== id);
-    Store.log('Deleted repair service');
-    Store.save('services');
+  if (a === 'deleteService') {
+    if (await confirmAction('Delete this service?')) {
+      Store.data.services = Store.data.services.filter(s => s.id !== id);
+      Store.log('Deleted repair service');
+      Store.save('services');
+    }
   }
-  if (a === 'deleteInquiry' && confirm('Delete this inquiry?')) {
-    Store.data.inquiries = Store.data.inquiries.filter(i => i.id !== id);
-    Store.log('Deleted customer inquiry');
-    Store.save('inquiries');
+  if (a === 'deleteInquiry') {
+    if (await confirmAction('Delete this inquiry?')) {
+      Store.data.inquiries = Store.data.inquiries.filter(i => i.id !== id);
+      Store.log('Deleted customer inquiry');
+      Store.save('inquiries');
+    }
   }
 });
 
@@ -2112,38 +2565,12 @@ document.querySelector('#saveSettings').onclick = () => {
     }
   }
 
-  // Preserve authentication hash and salt
-  s.auth = Store.data.settings.auth;
   Store.data.settings = s;
   Store.log('Updated store settings');
   Store.save('settings');
   UI.renderAll();
   Toast.show('Settings saved successfully');
 };
-
-// Admin Secure Password / PIN Update Form
-const changePinForm = document.querySelector('#changePinForm');
-if (changePinForm) {
-  changePinForm.onsubmit = async e => {
-    e.preventDefault();
-    if (!AuthService.isAuthenticated()) return;
-    const cur = document.querySelector('#currentPin')?.value;
-    const newP = document.querySelector('#newPin')?.value;
-    const conf = document.querySelector('#confirmPin')?.value;
-
-    if (newP !== conf) {
-      Toast.show('New PIN and confirmation do not match.', 'error');
-      return;
-    }
-    try {
-      await AuthService.updatePIN(cur, newP);
-      changePinForm.reset();
-      Toast.show('Admin PIN successfully updated!');
-    } catch (err) {
-      Toast.show(`PIN update failed: ${err.message}`, 'error');
-    }
-  };
-}
 
 // Data Export with Credential Redaction
 document.querySelector('#exportData').onclick = () => {
@@ -2187,8 +2614,14 @@ document.querySelector('#importFile').onchange = async e => {
   const file = e.target.files[0];
   if (!file) return;
 
-  if (file.size > CONFIG.maxImportBytes) {
-    Toast.show('Import rejected: File size exceeds 2 MB limit.', 'error');
+  const fileValidation = Validator.validateFileUpload(file, {
+    maxSize: CONFIG.maxImportBytes,
+    allowedExtensions: ['.json'],
+    allowedMimeTypes: ['application/json', 'text/json']
+  });
+
+  if (!fileValidation.valid) {
+    Toast.show(`Import rejected: ${fileValidation.error}`, 'error');
     e.target.value = '';
     return;
   }
@@ -2224,7 +2657,7 @@ document.querySelector('#importFile').onchange = async e => {
     delete cleanedSettings.auth;
     delete cleanedSettings.pin;
 
-    if (!confirm('Import will replace current catalog records in this browser. Continue?')) {
+    if (!await confirmAction('Import will replace current catalog records in this browser. Continue?')) {
       return;
     }
 
@@ -2235,7 +2668,6 @@ document.querySelector('#importFile').onchange = async e => {
       settings: {
         ...defaults,
         ...cleanedSettings,
-        auth: Store.data.settings.auth,
         hours: { ...defaults.hours, ...(cleanedSettings.hours || {}) }
       },
       activity: Array.isArray(x.activity) ? Security.deepCloneSafe(x.activity).slice(0, 50) : [],
@@ -2253,12 +2685,12 @@ document.querySelector('#importFile').onchange = async e => {
   }
 };
 
-document.querySelector('#resetData').onclick = () => {
+document.querySelector('#resetData').onclick = async () => {
   if (!AuthService.isAuthenticated()) {
     Toast.show('Unauthorized: Admin session required.', 'error');
     return;
   }
-  if (confirm('Reset the complete catalog to original verified defaults? This replaces modified records in this browser.')) {
+  if (await confirmAction('Reset the complete catalog to original verified defaults? This replaces modified records in this browser.')) {
     Store.reset();
     UI.renderAll();
     Toast.show('Demo catalog reset to baseline');
@@ -2270,6 +2702,11 @@ document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeDi
 document.querySelectorAll('dialog').forEach(d => {
   d.addEventListener('click', e => {
     if (e.target === d) d.close();
+  });
+  if (d.id === 'pinDialog') d.addEventListener('close', () => {
+    document.querySelector('#pinInput').value = '';
+    document.querySelector('#mfaInput').value = '';
+    AuthService.pendingAuth = null;
   });
 });
 
@@ -2293,17 +2730,97 @@ document.querySelector('#compareContent').onclick = e => {
   }
 };
 
-document.querySelector('#menuToggle').onclick = () => {
-  const nav = document.querySelector('.links');
-  if (!nav) return;
-  const shown = nav.style.display === 'flex';
-  nav.style.cssText = shown ? '' : 'display:flex;position:absolute;top:64px;left:0;right:0;padding:14px 20px;background:white;flex-direction:column;align-items:flex-start;border-bottom:1px solid #e2e8f0;z-index:20';
-};
+const menuToggle = document.querySelector('#menuToggle');
+const mainLinks = document.querySelector('#mainLinks');
+menuToggle?.addEventListener('click', () => {
+  const open = menuToggle.getAttribute('aria-expanded') !== 'true';
+  menuToggle.setAttribute('aria-expanded', String(open));
+  menuToggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+  mainLinks?.classList.toggle('open', open);
+});
+mainLinks?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+  mainLinks.classList.remove('open');
+  menuToggle?.setAttribute('aria-expanded', 'false');
+  menuToggle?.setAttribute('aria-label', 'Open navigation menu');
+}));
 
 window.addEventListener('scroll', () => {
   const nav = document.querySelector('#nav');
   if (nav) nav.classList.toggle('scrolled', window.scrollY > 12);
 }, { passive: true });
+
+// Theme, cookie choice, search attribution and small accessibility helpers.
+const themeButton = document.querySelector('#themeToggle');
+const applyTheme = dark => {
+  document.documentElement.classList.toggle('dark-mode', dark);
+  themeButton?.setAttribute('aria-pressed', String(dark));
+  if (themeButton) themeButton.textContent = dark ? '☀' : '☾';
+};
+try { applyTheme(localStorage.getItem('we.theme') === 'dark'); } catch {}
+themeButton?.addEventListener('click', () => {
+  const dark = !document.documentElement.classList.contains('dark-mode');
+  applyTheme(dark);
+  try { localStorage.setItem('we.theme', dark ? 'dark' : 'light'); } catch {}
+});
+const banner = document.querySelector('#cookieBanner');
+let consent = '';
+try { consent = localStorage.getItem('we.consent') || ''; } catch {}
+if (!consent && banner) banner.hidden = false;
+let siteConfig = null;
+const addSearchConsoleVerification = token => {
+  if (!token) return;
+  const meta = document.querySelector('#googleVerification') || document.createElement('meta');
+  meta.name = 'google-site-verification'; meta.content = token;
+  if (!meta.isConnected) document.head.append(meta);
+};
+const loadAnalytics = () => {
+  if (!siteConfig?.analyticsId || window.gtag) return;
+  const id = String(siteConfig.analyticsId);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function(){ window.dataLayer.push(arguments); };
+  window.gtag('js', new Date());
+  window.gtag('config', id, { anonymize_ip: true });
+  const script = document.createElement('script'); script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+  document.head.append(script);
+};
+fetch('/api/site-config').then(response => response.ok ? response.json() : null).then(config => {
+  if (!config) return;
+  siteConfig = config;
+  addSearchConsoleVerification(config.googleVerification);
+  if (config.publicSiteUrl) {
+    const origin = String(config.publicSiteUrl).replace(/\/$/, '');
+    const canonical = document.querySelector('#canonicalUrl');
+    if (canonical) canonical.href = `${origin}${location.pathname === '/' ? '/' : location.pathname}`;
+    const og = document.querySelector('meta[property="og:image"]');
+    if (og) og.content = `${origin}/og-image.svg`;
+    const schema = document.querySelector('#organizationSchema');
+    if (schema) schema.textContent = JSON.stringify({ '@context':'https://schema.org', '@type':'Organization', name:'World Electronics', url:`${origin}/`, logo:`${origin}/favicon.svg`, description:'Technology products and repair support.' });
+  }
+  if (consent === 'analytics') loadAnalytics();
+}).catch(() => {});
+const saveConsent = choice => {
+  try { localStorage.setItem('we.consent', choice); } catch {}
+  if (banner) banner.hidden = true;
+  if (choice === 'analytics') loadAnalytics();
+};
+document.querySelector('#cookieAccept')?.addEventListener('click', () => saveConsent('analytics'));
+document.querySelector('#cookieDecline')?.addEventListener('click', () => saveConsent('essential'));
+const topButton = document.querySelector('#backToTop');
+const progress = document.querySelector('#scrollProgress');
+window.addEventListener('scroll', () => {
+  const max = document.documentElement.scrollHeight - innerHeight;
+  if (progress) progress.style.transform = `scaleX(${max > 0 ? scrollY / max : 0})`;
+  topButton?.classList.toggle('visible', scrollY > 500);
+}, { passive: true });
+topButton?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+document.querySelector('#copyPageLink')?.addEventListener('click', async e => {
+  try { await navigator.clipboard.writeText(location.href); e.currentTarget.textContent = 'Link copied'; Toast.show('Page link copied.'); }
+  catch { Toast.show('Could not copy the link. Please copy it from your address bar.', 'error'); }
+});
+// Retain only campaign attribution values for this browser tab.
+const utm = Object.fromEntries(Array.from(new URLSearchParams(location.search).entries()).filter(([key]) => /^utm_(source|medium|campaign|term|content)$/.test(key)));
+if (Object.keys(utm).length) { try { sessionStorage.setItem('we.utm', JSON.stringify(utm)); } catch {} }
 
 setInterval(() => UI.updateHours(), 30000);
 
