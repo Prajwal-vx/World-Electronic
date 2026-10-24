@@ -1079,3 +1079,30 @@ dialog::backdrop {
     transition-duration:.01ms!important
   }
 }
+
+/* Product cards respond to mouse movement with a restrained 3D tilt. */
+.card.product-card {
+  transform:perspective(900px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) translateY(var(--card-lift,0px)) translateZ(var(--press-z,0px));
+  transform-style:preserve-3d;
+  transition:transform .18s ease,box-shadow .2s ease;
+  will-change:transform
+}
+.card.product-card:hover {
+  --card-lift:-4px;
+  transform:perspective(900px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) translateY(var(--card-lift,0px)) translateZ(var(--press-z,0px));
+  box-shadow:var(--shadow);
+}
+.product-card.is-pressed { --press-z:-8px; }
+.product-card .product-art { transform:translateZ(18px); }
+.product-card .product-art img,
+.product-card .emoji-art { transition:transform .25s ease,filter .25s ease; }
+.product-card:hover .product-art img,
+.product-card:hover .emoji-art { transform:scale(1.035); filter:drop-shadow(0 12px 9px #0f172a2b); }
+@media (pointer:coarse) {
+  .product-card { will-change:auto; }
+  .product-card .product-art { transform:none; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .product-card { transform:none!important; will-change:auto; }
+  .product-card .product-art,.product-card .product-art img,.product-card .emoji-art { transform:none!important; }
+}

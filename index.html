@@ -392,7 +392,7 @@
 <option>Archived</option>
 </select>
 </div>
-<div class="banner">Inquiries are saved only in this browser as demonstration records.</div>
+<div class="banner">Customer requests are held in server memory for this demo and are cleared when the server restarts.</div>
 <div class="tablewrap">
 <table class="table">
 <thead>
@@ -426,7 +426,7 @@
 </div>
 <div class="panel" style="margin-top:16px">
 <h3>Admin sign-in security</h3>
-<p>Admin access is checked by the server. Configure an scrypt password hash and TOTP secret through deployment environment variables. The browser does not store administrator passwords or session tokens.</p>
+<p>Admin access is checked by the server and requires both an scrypt password hash and a TOTP secret configured through deployment environment variables. The browser does not store administrator passwords or session tokens.</p>
 </div>
 <div class="panel" style="margin-top:16px">
 <h3>Data portability & recovery</h3>
@@ -437,7 +437,7 @@
 <input id="importFile" type="file" accept="application/json,.json" class="hidden">
 <button class="btn danger" id="resetData">Reset demo data</button>
 </div>
-<div class="banner">Admin sign-in uses server-side scrypt verification, rate limits, a Secure HttpOnly session cookie, CSRF protection, and optional server-configured TOTP. Catalog and preference data in this demo remain browser-local.</div>
+<div class="banner">Admin sign-in uses server-side scrypt verification, required TOTP, rate limits, a Secure HttpOnly session cookie, and CSRF protection. Catalog and preference data in this demo remain browser-local.</div>
 </div>
 </div>
 </div>
@@ -533,7 +533,7 @@
 </div>
 <form id="inquiryForm" class="modalbody">
 <div class="banner">Your request will be sent to this demo server for the store to review. Do not include payment or sensitive information.</div>
-<div id="inquiryStatus" class="form-status" aria-live="polite"></div>
+<div id="inquiryFormStatus" class="form-status" aria-live="polite"></div>
 <div class="adminform">
 <div class="field">
 <label for="inqName">Your name</label>

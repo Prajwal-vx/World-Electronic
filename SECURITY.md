@@ -4,7 +4,7 @@
 
 - Admin login is verified by the server using a configured scrypt hash. There is no built-in password or PIN.
 - Admin sessions use random `Secure`, `HttpOnly`, `SameSite=Strict` cookies. CSRF tokens are kept in server memory and checked on authenticated logout. Mutating browser API requests also require an allowed origin.
-- TOTP verification can be enabled with a server-only secret. Login is rate-limited, JSON bodies are size-limited, and webhook handling is disabled until a signing secret is configured.
+- TOTP verification is required with a server-only secret. Login is rate-limited, JSON bodies are size-limited, and webhook handling is disabled until a signing secret is configured.
 - Inquiry reads require an authenticated admin session. Public product reads expose only records explicitly marked published.
 - Imported JSON is size-limited, parsed, schema-checked, and validated. Existing browser-stored auth hashes, PINs, and tokens are purged.
 - Dynamic storefront values are escaped before HTML insertion. There is no SQL database or SQL execution path in this project.

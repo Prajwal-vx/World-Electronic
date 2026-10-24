@@ -399,7 +399,8 @@ const server = http.createServer(async (req, res) => {
           const name = String(body.name || '').trim();
           const contact = String(body.contact || '').trim();
           const message = String(body.message || '').trim();
-          if (!name || name.length > 80 || !contact || contact.length > 120 || !message || message.length > 1000 || !allowedTypes.includes(body.type || 'General support')) {
+          const item = typeof body.item === 'string' ? body.item.trim() : '';
+          if (!name || name.length > 80 || !contact || contact.length > 120 || !message || message.length > 1000 || item.length > 120 || !allowedTypes.includes(body.type || 'General support')) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Invalid request fields' }));
             return;
@@ -410,6 +411,7 @@ const server = http.createServer(async (req, res) => {
             contact,
             type: body.type || 'General support',
             message,
+            item,
             utm: body.utm && typeof body.utm === 'object' && !Array.isArray(body.utm)
               ? Object.fromEntries(Object.entries(body.utm).filter(([key]) => /^utm_(source|medium|campaign|term|content)$/.test(key)).map(([key, value]) => [key, String(value).slice(0, 120)]))
               : {},
@@ -420,10 +422,49 @@ const server = http.createServer(async (req, res) => {
           if (db.inquiries.length > 5000) db.inquiries.length = 5000;
           safeLog('New inquiry received successfully');
           res.writeHead(201, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: true, message: 'Inquiry received' }));
-        } catch {}
+          res.end(JSON.stringify({ success: true, inquiry }));
+        } catch {
+          if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Unable to save inquiry' }));
+          }
+        }
         return;
       }
+    }
+
+    const inquiryMatch = /^\/api\/inquiries\/([a-f\d-]{36})$/i.exec(url.pathname);
+    if (inquiryMatch && ['PATCH', 'DELETE'].includes(req.method)) {
+      if (!checkMutationOrigin() || !verifyCSRF()) return;
+      const inquiryIndex = db.inquiries.findIndex(item => item.id === inquiryMatch[1]);
+      if (inquiryIndex < 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Inquiry not found' }));
+        return;
+      }
+      if (req.method === 'DELETE') {
+        db.inquiries.splice(inquiryIndex, 1);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+        return;
+      }
+      if (req.headers['content-type']?.split(';')[0] !== 'application/json') {
+        res.writeHead(415, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Content-Type must be application/json' }));
+        return;
+      }
+      const body = await readJsonBody();
+      if (!body) return;
+      const allowedStatuses = ['New', 'Contacted', 'In Progress', 'Resolved', 'Archived'];
+      if (!allowedStatuses.includes(body.status)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid inquiry status' }));
+        return;
+      }
+      db.inquiries[inquiryIndex].status = body.status;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+      return;
     }
 
     // Webhook receiver endpoint with signature verification
@@ -501,34 +542,16 @@ const server = http.createServer(async (req, res) => {
       try {
         const body = await readJsonBody();
         if (!body) return;
-        if (!SERVER_CONFIG.adminPasswordHash) {
+        if (!SERVER_CONFIG.adminPasswordHash || !SERVER_CONFIG.totpSecret) {
           res.writeHead(503, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Admin authentication is not configured. Set ADMIN_PASSWORD_HASH.' }));
+          res.end(JSON.stringify({ error: 'Admin authentication is not configured. Set ADMIN_PASSWORD_HASH and ADMIN_TOTP_SECRET.' }));
           return;
         }
         const valid = verifyPassword(String(body.pin || ''), SERVER_CONFIG.adminPasswordHash);
 
         if (valid) {
-          if (SERVER_CONFIG.totpSecret) {
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: false, requireMFA: true }));
-            return;
-          }
-          const token = crypto.randomBytes(32).toString('hex');
-          const csrfToken = crypto.randomBytes(32).toString('hex');
-          if (db.sessions.size >= 5000) {
-            const oldest = db.sessions.keys().next().value;
-            db.sessions.delete(oldest);
-            db.csrfTokens.delete(oldest);
-          }
-          db.sessions.set(token, { role: 'admin', permissions: ['admin:*'], expires: Date.now() + SERVER_CONFIG.sessionDurationMs });
-          db.csrfTokens.set(token, csrfToken);
-
-          // Issue HttpOnly, Secure, SameSite=Strict Cookie
-          res.setHeader('Set-Cookie', `${SERVER_CONFIG.sessionCookieName}=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=900`);
-          safeLog('Admin session established securely');
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: true, csrfToken }));
+          res.end(JSON.stringify({ success: false, requireMFA: true }));
         } else {
           safeLog('Failed admin login attempt from IP');
           res.writeHead(401, { 'Content-Type': 'application/json' });

@@ -1271,7 +1271,7 @@ const UI = {
 
   productCard(p) {
     const el = document.createElement('article');
-    el.className = 'card';
+    el.className = 'card product-card';
     const img = safeURL(p.image);
     const safeName = escapeHTML(p.name);
     const safeBrand = escapeHTML(p.brand);
@@ -2105,6 +2105,19 @@ async function showAdmin() {
     Toast.show('Could not verify your admin session with the server.', 'error');
     return false;
   }
+  try {
+    const response = await fetch('/api/inquiries', { credentials: 'same-origin', cache: 'no-store' });
+    if (!response.ok) throw new Error();
+    const records = await response.json();
+    if (!Array.isArray(records)) throw new Error();
+    Store.data.inquiries = records.map(record => ({
+      id: record.id, name: record.name, contact: record.contact, type: record.type,
+      item: record.item || '', message: record.message, status: record.status, time: record.createdAt
+    })).filter(Validator.isSafeInquiry);
+  } catch {
+    Toast.show('Could not load the server inbox. Check the connection and try again.', 'error');
+    return false;
+  }
   document.querySelector('#storeView').classList.add('hidden');
   document.querySelector('#adminView').classList.remove('hidden');
   Admin.render();
@@ -2295,6 +2308,37 @@ document.querySelector('#productGrid').addEventListener('click', e => {
   if (action === 'clear') clearFilters();
 });
 
+// Mouse-only 3D product preview; touch and reduced-motion users get a static card.
+const productGrid = document.querySelector('#productGrid');
+const reduceProductMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+productGrid.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' || reduceProductMotion.matches) return;
+  const card = e.target.closest('.product-card');
+  if (!card || !productGrid.contains(card)) return;
+  const rect = card.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width - .5;
+  const y = (e.clientY - rect.top) / rect.height - .5;
+  card.style.setProperty('--tilt-x', `${(-y * 7).toFixed(2)}deg`);
+  card.style.setProperty('--tilt-y', `${(x * 9).toFixed(2)}deg`);
+}, { passive: true });
+productGrid.addEventListener('pointerout', e => {
+  const card = e.target.closest('.product-card');
+  if (!card || card.contains(e.relatedTarget)) return;
+  card.style.setProperty('--tilt-x', '0deg');
+  card.style.setProperty('--tilt-y', '0deg');
+  card.classList.remove('is-pressed');
+});
+productGrid.addEventListener('pointerdown', e => {
+  const card = e.target.closest('.product-card');
+  if (card && e.pointerType !== 'touch') card.classList.add('is-pressed');
+});
+productGrid.addEventListener('pointerup', e => {
+  e.target.closest('.product-card')?.classList.remove('is-pressed');
+});
+productGrid.addEventListener('pointercancel', e => {
+  e.target.closest('.product-card')?.classList.remove('is-pressed');
+});
+
 document.querySelector('#serviceGrid').onclick = e => {
   const b = e.target.closest('[data-action="serviceInquiry"]');
   if (b) Customer.inquiry('Repair service', b.dataset.id);
@@ -2375,7 +2419,7 @@ document.querySelector('#inquiryForm').onsubmit = async e => {
     return;
   }
 
-  const status = document.querySelector('#inquiryStatus');
+  const status = document.querySelector('#inquiryFormStatus');
   const submit = e.currentTarget.querySelector('button[type="submit"],button:not([type])');
   const loader = document.querySelector('#loadingIndicator');
   if (submit) submit.disabled = true;
@@ -2385,9 +2429,15 @@ document.querySelector('#inquiryForm').onsubmit = async e => {
     const response = await fetch('/api/inquiries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: inquiry.name, contact: inquiry.contact, type: inquiry.type, message: inquiry.message, utm: (() => { try { return JSON.parse(sessionStorage.getItem('we.utm') || '{}'); } catch { return {}; } })() })
+      body: JSON.stringify({ name: inquiry.name, contact: inquiry.contact, type: inquiry.type, item: inquiry.item, message: inquiry.message, utm: (() => { try { return JSON.parse(sessionStorage.getItem('we.utm') || '{}'); } catch { return {}; } })() })
     });
     if (!response.ok) throw new Error('The request could not be sent. Please try again shortly.');
+    const result = await response.json();
+    if (!result.success || !result.inquiry) throw new Error('The request could not be confirmed. Please try again.');
+    inquiry.id = result.inquiry.id;
+    inquiry.time = result.inquiry.createdAt;
+    inquiry.status = result.inquiry.status;
+    inquiry.item = result.inquiry.item || '';
   } catch (error) {
     if (loader) loader.hidden = true;
     if (status) { status.className = 'form-status error'; status.textContent = error.message || 'Connection problem. Please try again.'; }
@@ -2396,13 +2446,7 @@ document.querySelector('#inquiryForm').onsubmit = async e => {
     return;
   }
   if (loader) loader.hidden = true;
-  Store.data.inquiries.unshift(inquiry);
-  // Cap stored inquiries to prevent quota exhaustion
-  if (Store.data.inquiries.length > 200) {
-    Store.data.inquiries = Store.data.inquiries.slice(0, 200);
-  }
   Store.log('New customer inquiry submitted');
-  Store.save('inquiries');
   e.currentTarget.reset();
   if (status) { status.className = 'form-status success'; status.textContent = 'Thanks. Your request was sent successfully.'; }
   Toast.show('Your request was sent successfully.');
@@ -2502,16 +2546,26 @@ document.querySelector('#adminView').addEventListener('click', async e => {
   }
   if (a === 'deleteInquiry') {
     if (await confirmAction('Delete this inquiry?')) {
+      try {
+        const response = await fetch(`/api/inquiries/${encodeURIComponent(id)}`, {
+          method: 'DELETE', credentials: 'same-origin',
+          headers: { 'X-CSRF-Token': AuthService.csrfToken || '' }
+        });
+        if (!response.ok) throw new Error();
+      } catch {
+        Toast.show('The inquiry could not be deleted from the server.', 'error');
+        return;
+      }
       Store.data.inquiries = Store.data.inquiries.filter(i => i.id !== id);
       Store.log('Deleted customer inquiry');
-      Store.save('inquiries');
+      Admin.render();
     }
   }
 });
 
 document.querySelector('#inquiryStatus').onchange = () => Admin.inquiries();
 
-document.querySelector('#inquiryTable').onchange = e => {
+document.querySelector('#inquiryTable').onchange = async e => {
   if (!AuthService.isAuthenticated()) return;
   const sel = e.target.closest('[data-inq-status]');
   if (!sel) return;
@@ -2523,9 +2577,22 @@ document.querySelector('#inquiryTable').onchange = e => {
   }
   const i = Store.data.inquiries.find(x => x.id === sel.dataset.inqStatus);
   if (i) {
+    const previousStatus = i.status;
+    try {
+      const response = await fetch(`/api/inquiries/${encodeURIComponent(i.id)}`, {
+        method: 'PATCH', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': AuthService.csrfToken || '' },
+        body: JSON.stringify({ status: sel.value })
+      });
+      if (!response.ok) throw new Error();
+    } catch {
+      sel.value = previousStatus;
+      Toast.show('The inquiry status could not be saved to the server.', 'error');
+      return;
+    }
     i.status = sel.value;
     Store.log(`Inquiry status changed to ${i.status}`);
-    Store.save('inquiries');
+    Admin.render();
   }
 };
 
