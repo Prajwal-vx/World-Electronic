@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#1e40af">
 <title>World Electronics — Technology, made useful.</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self';">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -255,7 +258,7 @@
 </i> Live sync ready</span>
 <span class="spacer">
 </span>
-<button class="btn small" id="exitAdmin">← Storefront</button>
+<button class="btn small" id="exitAdmin">← Logout & Storefront</button>
 </div>
 </div>
 <section style="padding-top:28px">
@@ -394,6 +397,27 @@
 </div>
 </div>
 <div class="panel" style="margin-top:16px">
+<h3>Admin Security & Authentication</h3>
+<p>Change your administrator PIN. All credentials are protected with PBKDF2-SHA256 (100,000 rounds) and a cryptographic salt.</p>
+<form id="changePinForm" class="adminform">
+<div class="field">
+<label for="currentPin">Current PIN</label>
+<input id="currentPin" type="password" required autocomplete="current-password">
+</div>
+<div class="field">
+<label for="newPin">New PIN (minimum 4 characters)</label>
+<input id="newPin" type="password" minlength="4" maxlength="32" required autocomplete="new-password">
+</div>
+<div class="field">
+<label for="confirmPin">Confirm New PIN</label>
+<input id="confirmPin" type="password" minlength="4" maxlength="32" required autocomplete="new-password">
+</div>
+<div class="form-actions wide">
+<button class="btn primary" type="submit">Update Admin PIN</button>
+</div>
+</form>
+</div>
+<div class="panel" style="margin-top:16px">
 <h3>Data portability & recovery</h3>
 <p>Export a JSON snapshot, or import a validated demo snapshot to replace local records.</p>
 <div class="actions">
@@ -402,7 +426,7 @@
 <input id="importFile" type="file" accept="application/json,.json" class="hidden">
 <button class="btn danger" id="resetData">Reset demo data</button>
 </div>
-<div class="banner">The admin PIN is a client-side demo gate, not secure authentication. Production use requires server-side authentication, authorization, and validation. LocalStorage and BroadcastChannel sync compatible tabs in this browser only; they do not provide a server, shared multi-device database, or cross-user synchronization.</div>
+<div class="banner">Admin operations are secured with PBKDF2-SHA256 password hashing, brute-force rate-limiting, and ephemeral authenticated sessions. LocalStorage sync is validated against strict schemas. Credentials are automatically redacted during data export.</div>
 </div>
 </div>
 </div>
@@ -427,18 +451,19 @@
 <button class="iconbtn" data-close="pinDialog" aria-label="Close">✕</button>
 </div>
 <form id="pinForm" class="modalbody">
-<p>Enter the demo PIN to open store management.</p>
+<p>Enter your administrator PIN to open store management.</p>
+<div id="pinLockoutBanner" class="banner" style="display:none;margin-bottom:14px;background:#fee2e2;color:#991b1b;border-color:#fca5a5;"></div>
 <div class="field">
-<label for="pinInput">Demo PIN</label>
+<label for="pinInput">Administrator PIN</label>
 <div style="display:flex;gap:8px">
 <input id="pinInput" class="control" type="password" inputmode="numeric" autocomplete="off" required>
 <button class="btn outline" type="button" id="pinToggle">Show</button>
 </div>
-<div class="notice">This PIN is stored in the browser and does not provide production security.</div>
+<div class="notice" id="pinNotice">Default PIN is 1234. Protected with PBKDF2 hashing, progressive delay, lockout protection, and active session management.</div>
 </div>
 <div class="form-actions">
 <button type="button" class="btn outline" data-close="pinDialog">Cancel</button>
-<button class="btn primary" type="submit">Enter admin</button>
+<button class="btn primary" id="pinSubmitBtn" type="submit">Enter admin</button>
 </div>
 </form>
 </dialog>

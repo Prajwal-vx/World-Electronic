@@ -1,0 +1,10 @@
+{
+  "name": "world-electronics",
+  "version": "1.0.0",
+  "description": "World Electronics client-side storefront and administration portal",
+  "private": true,
+  "scripts": {
+    "test": "node tests/security_audit.test.mjs",
+    "check": "node -c app.js"
+  }
+}
