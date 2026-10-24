@@ -1,16 +1,16 @@
 /**
- * World Electronics — Production-Hardened Storefront & Administration Engine
+ * World Electronics — Demo Storefront & Administration Engine
  * 
  * Security Controls Implemented:
- * 1. Cryptographic Authentication: PBKDF2-SHA256 (100,000 rounds) + 16-byte random salt.
- * 2. Brute-Force & Rate-Limiting Protection: Exponential delay and progressive lockout.
- * 3. Session Security: Ephemeral session tokens, activity tracking, 15-minute idle timeout.
+ * 1. Browser utility hashing: PBKDF2-SHA256 (100,000 rounds) + 16-byte random salt; admin auth uses server scrypt.
+ * 2. Server login and inquiry endpoints use rate limits.
+ * 3. Admin sessions use a Secure, HttpOnly server cookie with a 15-minute lifetime.
  * 4. Stored & DOM XSS Prevention: Context-aware HTML entity escaping across all dynamic templates.
  * 5. Prototype Pollution Defense: Strict sanitization and key-filtering (__proto__, constructor).
- * 6. Cross-Tab Sync Hardening: Schema validation of BroadcastChannel & storage events; credentials non-syncable.
+ * 6. Cross-Tab Sync: Schema validation of BroadcastChannel & storage events; credentials and inquiries are not synced.
  * 7. Mass-Assignment & Parameter Tampering Guards: Explicit allowlists on quick-edits and status changes.
  * 8. Safe Data Portability: Automatic credential redaction during exports; 2MB size cap and deep validation on imports.
- * 9. Inquiry Spam Defense: Client-side rate limiting (max 5/min) and bounded storage.
+ * 9. Inquiry Spam Defense: Client and server rate limits; inquiries live in server memory for this demo.
  * 10. Navigation & Tabnabbing Protection: Validated outbound links with noopener/noreferrer.
  */
 
@@ -47,6 +47,31 @@ const seedProducts = [
   { id: 'charger-15', name: '65W USB-C Fast Charger', brand: 'Anker', model: 'Nano II 65W', category: 'Accessories', price: 39, previousPrice: 49, stock: 2, threshold: 5, featured: false, published: true, description: 'A compact USB-C charger for compatible phones, tablets, and many laptops.', specs: { Output: '65 W max', Ports: '1 × USB-C', Technology: 'GaN II', Compatibility: 'USB-C PD devices' }, keywords: ['charger', 'usb c', 'power', 'travel'], warranty: '18 months', rating: 4.6, icon: '🔌' },
   { id: 'storage-16', name: 'Portable SSD 1TB', brand: 'Samsung', model: 'T7 Shield', category: 'Accessories', price: 119, previousPrice: null, stock: 14, threshold: 4, featured: false, published: true, description: 'Fast portable storage with a rugged exterior for creative projects and everyday backups.', specs: { Capacity: '1 TB', Interface: 'USB 3.2 Gen 2', Speed: 'Up to 1050 MB/s', Protection: 'IP65 rated' }, keywords: ['ssd', 'storage', 'backup', 'portable'], warranty: '3 years limited', rating: 4.8, icon: '💾' }
 ];
+
+// Remote manufacturer and retailer product photography for the demo catalog.
+const seedProductImages = Object.freeze({
+  'lap-study-01': 'https://www.acervietnam.com.vn/wp-content/uploads/2021/01/Laptop-Van-Phong-Mong-Nhe-Acer-Aspire-5-2023-1-scaled.webp',
+  'lap-work-02': 'https://cdn.a2zmegastore.com/storage/products/Business-laptops/2026/01/54384/1768986345_21JK00JMGR_9907941258382_1.webp',
+  'lap-game-03': 'https://dlcdnwebimgs.asus.com/gain/3166c96d-5c61-4ae7-9d62-d272df1fe385/',
+  'pc-home-04': 'https://www.hp.com/fr-fr/shop/Html/Merch/Images/75U87EA-ABF_2_1750x1285.jpg',
+  'mob-premium-05': 'https://cdn.cs.1worldsync.com/44/16/44161717-4a75-40eb-bd46-293c8bc73b3e.jpg',
+  'mob-android-06': 'https://alo.md/media/media/motorola-edge-50-fusion-marshmallow-blue.webp',
+  'mob-budget-07': 'https://images.ctfassets.net/wcfotm6rrl7u/3BhWVje5jB1wHYpUs7Ty8L/15f4aec50ba0b30679c9ccee4874d809/nokia-G42_5G-so_pink-front_back-int.png?fm=webp&h=1200&w=1200&q=85',
+  'tab-08': 'https://media.itechstore.com.np/f_webp/img/product/d695be6c-883b-4f7e-a29f-b84a404c812b/ipad-10th-gen-main.png',
+  'tv-09': 'https://www.lg.com/content/dam/channel/wcms/my/images/tvs/55uq7550psf_ats_eaml_my_c/gallery/MZ_02_VF.jpg',
+  'fridge-10': 'https://www.whirlpool.com/is/image/content/dam/global/whirlpool/refrigeration/freestanding-refrigerator/images/hero-WRT318FZDM.tif?fmt=webp-alpha&wid=1200',
+  'washer-11': 'https://www.chathamhomestore.com/cdn/shop/files/white-front-load-washer-wf45t6000aw-1.png?v=1717732024',
+  'micro-12': 'https://walfosbrand.com/cdn/shop/files/71uRdJEzvBL.jpg?v=1738851561',
+  'audio-13': 'https://techhouse.sg/cdn/shop/files/WH-CH720N_Black_Swivel-Large.jpg?v=1755307892&width=1946',
+  'keyboard-14': 'https://www.logitech.com/content/dam/logitech/en/products/combos/mk540-mouse-keyboard-combo/gallery/mk540-br-gallery1.png',
+  'charger-15': 'https://cdn.shopify.com/s/files/1/0493/9834/9974/files/A2663111_TD02_V2_3840x.jpg?v=1749625907',
+  'storage-16': 'https://online.challenger.sg/cdn/shop/files/8806092310131_CURDtDLpyA7ZtTVc1sq6AhJifMWNss0u9agQyviw.jpg?v=1755900198'
+});
+
+const withSeedProductImages = list => list.map(product => {
+  const image = product.image || seedProductImages[product.id];
+  return image ? { ...product, image } : product;
+});
 
 const seedServices = [
   { id: 'svc-laptop', name: 'Laptop Diagnostics', type: 'Computer repair', price: 49, description: 'A careful assessment of laptop hardware, software, and performance concerns.', published: true },
@@ -609,7 +634,7 @@ const AuthService = {
   sessionExpires: 0,
   csrfToken: null,
   pendingAuth: null, // Ephemeral state between step 1 (PIN) and step 2 (MFA)
-  SESSION_DURATION_MS: 15 * 60 * 1000, // 15-minute inactivity session timeout
+  SESSION_DURATION_MS: 15 * 60 * 1000, // 15-minute absolute session lifetime, matching the server cookie
   MAX_FAILED_ATTEMPTS: 5,
   LOCKOUT_DURATION_MS: 60 * 1000, // 60-second progressive lockout
 
@@ -695,8 +720,6 @@ const AuthService = {
       this.logout();
       return false;
     }
-    // Refresh session on verified active usage
-    this.sessionExpires = Date.now() + this.SESSION_DURATION_MS;
     return true;
   },
 
@@ -773,12 +796,16 @@ const Store = {
     AuthService.purgeStorageTokens();
     let recovered = false;
     if (typeof localStorage === 'undefined') {
-      this.data.products = structuredClone(seedProducts);
+      this.data.products = withSeedProductImages(structuredClone(seedProducts));
       this.data.services = structuredClone(seedServices);
       this.data.settings = { ...defaults };
       return;
     }
+    // Inquiries now belong to the server inbox; erase records saved by older demo versions.
+    this.data.inquiries = [];
+    try { localStorage.removeItem(`${CONFIG.prefix}.${keys.inquiries}`); } catch {}
     for (const [name, key] of Object.entries(keys)) {
+      if (name === 'inquiries') continue;
       try {
         const raw = localStorage.getItem(`${CONFIG.prefix}.${key}`);
         if (raw !== null) {
@@ -802,11 +829,9 @@ const Store = {
           } else if (Array.isArray(parsed)) {
             const cleaned = Security.deepCloneSafe(parsed);
             if (name === 'products') {
-              this.data.products = cleaned.filter(p => Validator.isSafeProduct(p));
+              this.data.products = withSeedProductImages(cleaned.filter(p => Validator.isSafeProduct(p)));
             } else if (name === 'services') {
               this.data.services = cleaned.filter(s => Validator.isSafeService(s));
-            } else if (name === 'inquiries') {
-              this.data.inquiries = cleaned.filter(i => Validator.isSafeInquiry(i));
             } else {
               this.data[name] = cleaned;
             }
@@ -822,16 +847,22 @@ const Store = {
     }
 
     if (recovered && (!this.data.products.length || !this.data.services.length)) {
-      this.data.products = structuredClone(seedProducts);
+      this.data.products = withSeedProductImages(structuredClone(seedProducts));
       this.data.services = structuredClone(seedServices);
       this.data.settings = { ...defaults };
       this.log('Demo data initialized with secure defaults');
       this.saveAll(false);
     }
+    // Existing browser catalogs keep their edits while gaining the new seed photography.
+    this.data.products = withSeedProductImages(this.data.products);
   },
 
   save(name, broadcast = true) {
     if (typeof localStorage === 'undefined') return;
+    if (name === 'inquiries') {
+      try { localStorage.removeItem(`${CONFIG.prefix}.${keys.inquiries}`); } catch {}
+      return;
+    }
     try {
       const sanitized = Security.deepCloneSafe(this.data[name]);
       if (name === 'settings' && sanitized && typeof sanitized === 'object') {
@@ -854,6 +885,7 @@ const Store = {
   },
 
   publish(name) {
+    if (name === 'inquiries') return;
     if (!this.channel) return;
     // Strictly redact credentials and auth secrets before publishing over BroadcastChannel
     let broadcastData = this.data[name];
@@ -906,6 +938,7 @@ const Store = {
   },
 
   refresh(name, raw) {
+    if (name === 'inquiries') return false;
     try {
       const value = JSON.parse(raw);
       if (name === 'settings' && value && typeof value === 'object') {
@@ -926,8 +959,6 @@ const Store = {
           this.data.products = cleaned.filter(p => Validator.isSafeProduct(p));
         } else if (name === 'services') {
           this.data.services = cleaned.filter(s => Validator.isSafeService(s));
-        } else if (name === 'inquiries') {
-          this.data.inquiries = cleaned.filter(i => Validator.isSafeInquiry(i));
         } else {
           this.data[name] = cleaned;
         }
@@ -1056,6 +1087,7 @@ const SyncEngine = {
     window.addEventListener('storage', e => {
       if (!e.key?.startsWith(CONFIG.prefix + '.') || !e.newValue) return;
       const name = Object.keys(keys).find(k => `${CONFIG.prefix}.${keys[k]}` === e.key);
+      if (name === 'inquiries') return;
       if (name && Store.refresh(name, e.newValue)) {
         Store.revision++;
         this.render(name);
@@ -1071,7 +1103,7 @@ const SyncEngine = {
     if (Store.seen.size > 150) Store.seen.delete(Store.seen.values().next().value);
 
     // Only allow known data collections
-    if (!['products', 'services', 'inquiries', 'settings', 'activity', 'preferences'].includes(m.name)) return;
+    if (!['products', 'services', 'settings', 'activity', 'preferences'].includes(m.name)) return;
 
     // Never sync authentication credentials across BroadcastChannel
     if (m.name === 'settings') {
@@ -1099,7 +1131,6 @@ const SyncEngine = {
       let valid = false;
       if (m.name === 'products') valid = cleaned.every(p => Validator.isSafeProduct(p));
       else if (m.name === 'services') valid = cleaned.every(s => Validator.isSafeService(s));
-      else if (m.name === 'inquiries') valid = cleaned.every(i => Validator.isSafeInquiry(i));
       else valid = true;
 
       if (valid) {
@@ -2728,10 +2759,26 @@ document.querySelector('#importFile').onchange = async e => {
       return;
     }
 
+    const inquiryImport = await fetch('/api/inquiries', {
+      method: 'PUT', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': AuthService.csrfToken || '' },
+      body: JSON.stringify({ inquiries: cleanedInquiries })
+    });
+    if (!inquiryImport.ok) throw new Error('The server could not import inquiry records. No browser data was changed.');
+    const inquiryResult = await inquiryImport.json();
+    if (!inquiryResult.success || !Array.isArray(inquiryResult.inquiries)) throw new Error('The server could not confirm inquiry import.');
+    const importedRecords = inquiryResult.inquiries.map(record => ({
+      id: record.id, name: record.name, contact: record.contact, type: record.type,
+      item: record.item || '', message: record.message, status: record.status, time: record.createdAt
+    })).filter(Validator.isSafeInquiry);
+    const mergedInquiries = new Map(Store.data.inquiries.map(record => [record.id, record]));
+    importedRecords.forEach(record => mergedInquiries.set(record.id, record));
+    const serverInquiries = Array.from(mergedInquiries.values()).slice(0, 5000);
+
     Store.data = {
       products: cleanedProducts,
       services: cleanedServices,
-      inquiries: cleanedInquiries,
+      inquiries: serverInquiries,
       settings: {
         ...defaults,
         ...cleanedSettings,

@@ -1,14 +1,14 @@
 /**
- * World Electronics — Production-Hardened Security Server
+ * World Electronics — Demo Security Server
  * 
  * Implements robust server-side security controls:
- * 1. Server-Side Role-Based Permissions & Row-Level Security (RLS)
+ * 1. Server checks admin permissions before inquiry access and unpublished catalog reads
  * 2. HttpOnly, SameSite=Strict, Secure Cookie Authentication (No tokens in localStorage)
  * 3. Secrets kept strictly server-side (password hashes, TOTP and webhook signing secrets)
  * 4. Strict CORS configuration and defense-in-depth HTTP security headers
  * 5. Sliding-window server-side rate limiting against brute-force & DoS
  * 6. Cryptographic CSRF protection on state-modifying requests
- * 7. Outbound SSRF firewall (blocks RFC 1918, loopback, AWS/GCP cloud metadata 169.254.169.254)
+ * 7. SSRF destination screening for proxy URL inputs (this demo does not fetch those URLs)
  * 8. Timing-safe Webhook HMAC-SHA256 signature verification with replay defense
  * 9. PII and credential redaction from all server logs
  */
@@ -262,7 +262,6 @@ const server = http.createServer(async (req, res) => {
   const sessionToken = cookies[SERVER_CONFIG.sessionCookieName];
   const session = sessionToken ? db.sessions.get(sessionToken) : null;
   const isAuthenticatedAdmin = session && session.role === 'admin' && session.permissions?.includes('admin:*') && session.expires > Date.now();
-
   // Helper to read JSON request body
   const readJsonBody = () => new Promise((resolve, reject) => {
     const chunks = [];
@@ -376,6 +375,64 @@ const server = http.createServer(async (req, res) => {
         }
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(db.inquiries));
+        return;
+      }
+
+      if (req.method === 'PUT') {
+        if (!checkMutationOrigin() || !verifyCSRF()) return;
+        if (req.headers['content-type']?.split(';')[0] !== 'application/json') {
+          res.writeHead(415, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Content-Type must be application/json' }));
+          return;
+        }
+        const body = await readJsonBody();
+        if (!body) return;
+        if (!Array.isArray(body.inquiries) || body.inquiries.length > 200) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Inquiry import must contain at most 200 records' }));
+          return;
+        }
+        const allowedTypes = ['Repair service', 'Product question', 'Restock request', 'General support'];
+        const allowedStatuses = ['New', 'Contacted', 'In Progress', 'Resolved', 'Archived'];
+        const imported = [];
+        const inquiryKey = record => JSON.stringify([record.name, record.contact, record.type, record.message, record.item, record.createdAt]);
+        const existingKeys = new Set(db.inquiries.map(inquiryKey));
+        for (const source of body.inquiries) {
+          if (!source || typeof source !== 'object' || Array.isArray(source)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Invalid inquiry import record' }));
+            return;
+          }
+          const name = typeof source.name === 'string' ? source.name.trim() : '';
+          const contact = typeof source.contact === 'string' ? source.contact.trim() : '';
+          const message = typeof source.message === 'string' ? source.message.trim() : '';
+          const type = source.type || 'General support';
+          const status = source.status || 'New';
+          const item = typeof source.item === 'string' ? source.item.trim() : '';
+          if (!name || name.length > 80 || !contact || contact.length > 120 || !message || message.length > 1000 || item.length > 120 || !allowedTypes.includes(type) || !allowedStatuses.includes(status)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Invalid inquiry import fields' }));
+            return;
+          }
+          const parsedDate = Date.parse(source.time || source.createdAt || '');
+          const record = {
+            id: crypto.randomUUID(), name, contact, type, message, item, status,
+            utm: {}, createdAt: Number.isFinite(parsedDate) ? new Date(parsedDate).toISOString() : new Date().toISOString()
+          };
+          const key = inquiryKey(record);
+          if (!existingKeys.has(key)) {
+            existingKeys.add(key);
+            imported.push(record);
+          }
+        }
+        if (db.inquiries.length + imported.length > 5000) {
+          res.writeHead(409, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'The inquiry inbox is full. Remove older requests before importing more.' }));
+          return;
+        }
+        db.inquiries = imported.concat(db.inquiries);
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify({ success: true, inquiries: imported }));
         return;
       }
 
