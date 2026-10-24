@@ -1913,8 +1913,9 @@ const Admin = {
           <input name="threshold" type="number" min="1" max="1000" step="1" required value="${p.threshold ?? Store.data.settings.lowStock}">
         </div>
         <div class="field">
-          <label>Image URL (optional, http/https only)</label>
+          <label>Product image URL (optional)</label>
           <input name="image" type="url" maxlength="500" value="${escapeHTML(p.image || '')}">
+          <small class="field-hint">Use a direct JPG, PNG, or WebP image URL. Square or 4:3 images display best; product photos stay fully visible.</small>
         </div>
         <div class="field">
           <label>Warranty</label>
