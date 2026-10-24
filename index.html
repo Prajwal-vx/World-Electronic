@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1e40af">
+<title>World Electronics — Technology, made useful.</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="topline">Thoughtful technology. Friendly expert support. <span>·</span>
+<span id="demoTag">Demo catalog — sample products and prices</span>
+</div>
+<header class="nav" id="nav">
+<div class="wrap navinner">
+<a class="brand" href="#home" aria-label="World Electronics home">
+<span class="logo">WE</span>
+<span>World Electronics</span>
+</a>
+<nav class="links" aria-label="Main navigation">
+<a href="#catalog">Shop</a>
+<a href="#services">Repairs</a>
+<a href="#passport">TechCare</a>
+</nav>
+<div class="spacer">
+</div>
+<label class="searchnav">
+<span class="searchico">⌕</span>
+<input id="navSearch" placeholder="Search products…" aria-label="Search products">
+</label>
+<button class="iconbtn" id="wishNav" aria-label="Open wishlist">♡ <span id="wishCount">0</span>
+</button>
+<button class="iconbtn" id="compareNav" aria-label="Open comparison">⇄ <span id="compareCount">0</span>
+</button>
+<button class="btn small outline" id="adminEntry">Admin</button>
+<button class="iconbtn hamb" id="menuToggle" aria-label="More links">☰</button>
+</div>
+</header>
+<main id="storeView">
+<section class="hero" id="home">
+<div class="wrap">
+<div class="hero-grid">
+<div>
+<div class="eyebrow">Technology, made useful</div>
+<h1>Find Your Next Favorite Technology.</h1>
+<p>Shop smarter, get expert repair support, and make technology work for you.</p>
+<div class="actions">
+<a class="btn primary" href="#catalog">Browse Products <span>→</span>
+</a>
+<a class="btn outline" href="#techmatch">Find My Ideal Tech</a>
+<a class="btn outline" href="#services">Explore Repair Services</a>
+<button class="btn dark" id="directionsBtn">Get Directions ↗</button>
+</div>
+<div class="statusline">
+<span class="live-dot" id="storeDot">
+</span>
+<strong id="storeStatus">Checking store hours…</strong>
+<span>·</span>
+<span id="clock">—</span>
+<span>·</span>
+<span id="liveSync" class="sync">
+<i class="live-dot">
+</i> Live sync ready</span>
+</div>
+</div>
+<div class="hero-art" aria-label="Illustration of modern technology">
+<div class="art-label">A better everyday, connected</div>
+<div class="device-stack">
+<div class="device laptop">⌨</div>
+<div class="device phone">▣</div>
+<div class="device tablet">▭</div>
+</div>
+</div>
+</div>
+<div class="highlights">
+<div class="highlight">
+<span>⌂</span> Home Appliances</div>
+<div class="highlight">
+<span>▰</span> Laptops & PCs</div>
+<div class="highlight">
+<span>▣</span> Mobile Devices</div>
+<div class="highlight">
+<span>⚙</span> Reliable Repairs</div>
+</div>
+</div>
+</section>
+<section id="catalog">
+<div class="wrap">
+<div class="section-head">
+<div>
+<div class="eyebrow">Curated for everyday life</div>
+<h2>Shop the collection</h2>
+<p>Browse a sample catalog. Availability and prices are illustrative demo data.</p>
+</div>
+<button class="btn outline" id="clearFiltersTop">Clear filters</button>
+</div>
+<div class="catalog-layout">
+<aside class="filters">
+<h3>Find your fit</h3>
+<div class="field">
+<label for="catalogSearch">Search catalog</label>
+<input id="catalogSearch" type="search" placeholder="Name, model, feature…">
+</div>
+<div class="filter-body">
+<div class="field">
+<label for="categoryFilter">Category</label>
+<select id="categoryFilter">
+<option value="">All Products</option>
+<option>Home Appliances</option>
+<option>Laptops & PCs</option>
+<option>Mobile & Tablets</option>
+<option>Accessories</option>
+<option>Services &amp; Repairs</option>
+</select>
+</div>
+<div class="field">
+<label for="availabilityFilter">Availability</label>
+<select id="availabilityFilter">
+<option value="">Any availability</option>
+<option value="in">In stock</option>
+<option value="low">Low stock</option>
+<option value="out">Out of stock</option>
+</select>
+</div>
+<div class="field">
+<label>Price range (<span id="currencyLabel">USD</span>)</label>
+<div class="range-row">
+<input id="minPrice" type="number" min="0" placeholder="Min" aria-label="Minimum price">
+<input id="maxPrice" type="number" min="0" placeholder="Max" aria-label="Maximum price">
+</div>
+</div>
+<div class="field">
+<label for="priceSlider">Maximum price <span id="sliderVal">
+</span>
+</label>
+<input id="priceSlider" type="range" min="0" max="3000" value="3000">
+</div>
+<label class="check">
+<input id="featuredFilter" type="checkbox"> Featured only</label>
+</div>
+<button class="btn outline small" id="clearFilters">Reset all filters</button>
+</aside>
+<div>
+<div class="catalog-tools">
+<span id="resultCount" class="resultcount" aria-live="polite">Loading catalog…</span>
+<select id="sortFilter" class="control" aria-label="Sort products">
+<option value="featured">Recommended</option>
+<option value="price-up">Price: low to high</option>
+<option value="price-down">Price: high to low</option>
+<option value="rating">Top rated</option>
+<option value="stock">Availability</option>
+</select>
+</div>
+<div id="activeChips" class="filterchips">
+</div>
+<div id="productGrid" class="grid" aria-live="polite">
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="features" id="techmatch">
+<div class="wrap">
+<div class="section-head">
+<div>
+<div class="eyebrow">A little guidance goes a long way</div>
+<h2>Meet TechMatch</h2>
+<p>Three quick questions. Clear recommendations based on your needs.</p>
+</div>
+</div>
+<div class="two-col">
+<div class="panel">
+<div class="iconbox">✦</div>
+<h3>Find your ideal tech</h3>
+<p>Tell us what matters most and we’ll explain why a match makes sense.</p>
+<div class="field">
+<label for="matchUse">What will you use it for?</label>
+<select id="matchUse">
+<option value="study">Study & everyday tasks</option>
+<option value="work">Professional productivity</option>
+<option value="gaming">Gaming & creative work</option>
+<option value="mobile">On-the-go communication</option>
+<option value="home">Home entertainment</option>
+</select>
+</div>
+<div class="field">
+<label for="matchBudget">Your budget</label>
+<select id="matchBudget">
+<option value="800">Up to $800</option>
+<option value="1500">Up to $1,500</option>
+<option value="3000">Up to $3,000</option>
+<option value="999999">Flexible budget</option>
+</select>
+</div>
+<div class="field">
+<label for="matchPriority">Top priority</label>
+<select id="matchPriority">
+<option value="value">Great value</option>
+<option value="performance">Performance</option>
+<option value="portable">Portability</option>
+<option value="reliable">Reliability</option>
+</select>
+</div>
+<button class="btn primary" id="runMatch">Show my matches</button>
+<div id="matchResult" aria-live="polite">
+</div>
+</div>
+<div class="passport" id="passport">
+<div class="eyebrow" style="color:#93c5fd">TechCare Passport</div>
+<h2>Your devices, cared for.</h2>
+<p>Get practical care tips and see relevant repair support available in this demo catalog.</p>
+<div class="field">
+<label for="passportDevice">Choose a device category</label>
+<select id="passportDevice">
+<option value="Laptops & PCs">Laptop or desktop</option>
+<option value="Mobile & Tablets">Phone or tablet</option>
+<option value="Home Appliances">Home appliance</option>
+<option value="Accessories">Accessory</option>
+</select>
+</div>
+<button class="btn" id="passportBtn">View care guide</button>
+<div id="passportResult" aria-live="polite">
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="services">
+<div class="wrap">
+<div class="section-head">
+<div>
+<div class="eyebrow">Here when you need a hand</div>
+<h2>Repair & support</h2>
+<p>Clear next steps from friendly, knowledgeable technicians.</p>
+</div>
+<button class="btn primary" id="repairInquiryBtn">Request support</button>
+</div>
+<div class="servicegrid" id="serviceGrid">
+</div>
+</div>
+</section>
+<section id="trust" style="padding-top:0">
+<div class="wrap">
+<div class="banner">
+<strong>About this demo:</strong> Products, prices, stock, and inquiries are illustrative and stored in this browser. This prototype does not represent live store inventory or a real service booking. WhatsApp, Maps, and cross-device sync require your own configured details.</div>
+</div>
+</section>
+</main>
+<main id="adminView" class="hidden">
+<div class="adminbar">
+<div class="wrap">
+<strong>⚙ World Electronics Admin</strong>
+<span class="sync" id="adminSync">
+<i class="live-dot">
+</i> Live sync ready</span>
+<span class="spacer">
+</span>
+<button class="btn small" id="exitAdmin">← Storefront</button>
+</div>
+</div>
+<section style="padding-top:28px">
+<div class="wrap admin-layout">
+<aside class="adminside" aria-label="Admin sections">
+<button class="btn active" data-admin-tab="overview">▦ Overview</button>
+<button class="btn" data-admin-tab="inventory">▣ Inventory</button>
+<button class="btn" data-admin-tab="services">⚙ Services</button>
+<button class="btn" data-admin-tab="inquiries">✉ Inquiries</button>
+<button class="btn" data-admin-tab="settings">⚑ Settings & data</button>
+</aside>
+<div class="adminmain">
+<div id="admin-overview" class="adminsection active">
+<div class="section-head">
+<div>
+<div class="eyebrow">At a glance</div>
+<h2>Store dashboard</h2>
+</div>
+</div>
+<div id="stats" class="stats">
+</div>
+<div class="two-col">
+<div class="panel">
+<h3>Stock watch</h3>
+<div id="stockWatch">
+</div>
+</div>
+<div class="panel">
+<h3>Recent activity</h3>
+<div id="activityList">
+</div>
+</div>
+</div>
+</div>
+<div id="admin-inventory" class="adminsection">
+<div class="section-head">
+<div>
+<div class="eyebrow">Catalog management</div>
+<h2>Inventory</h2>
+</div>
+<button class="btn primary" id="addProduct">+ Add product</button>
+</div>
+<div class="field">
+<input id="adminProductSearch" placeholder="Search inventory…" aria-label="Search inventory">
+</div>
+<div id="productFormHost">
+</div>
+<div class="tablewrap">
+<table class="table">
+<thead>
+<tr>
+<th>Product</th>
+<th>Category</th>
+<th>Price</th>
+<th>Stock</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="productTable">
+</tbody>
+</table>
+</div>
+</div>
+<div id="admin-services" class="adminsection">
+<div class="section-head">
+<div>
+<div class="eyebrow">Technical support</div>
+<h2>Repair services</h2>
+</div>
+<button class="btn primary" id="addService">+ Add service</button>
+</div>
+<div id="serviceFormHost">
+</div>
+<div class="tablewrap">
+<table class="table">
+<thead>
+<tr>
+<th>Service</th>
+<th>Type</th>
+<th>Price</th>
+<th>Published</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="serviceTable">
+</tbody>
+</table>
+</div>
+</div>
+<div id="admin-inquiries" class="adminsection">
+<div class="section-head">
+<div>
+<div class="eyebrow">Customer requests</div>
+<h2>Inquiries</h2>
+</div>
+<select id="inquiryStatus" class="control" style="max-width:180px">
+<option value="">All statuses</option>
+<option>New</option>
+<option>Contacted</option>
+<option>In Progress</option>
+<option>Resolved</option>
+<option>Archived</option>
+</select>
+</div>
+<div class="banner">Inquiries are saved only in this browser as demonstration records.</div>
+<div class="tablewrap">
+<table class="table">
+<thead>
+<tr>
+<th>Received</th>
+<th>Customer</th>
+<th>Request</th>
+<th>Details</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="inquiryTable">
+</tbody>
+</table>
+</div>
+</div>
+<div id="admin-settings" class="adminsection">
+<div class="section-head">
+<div>
+<div class="eyebrow">Configure your demo</div>
+<h2>Settings & data</h2>
+</div>
+</div>
+<div class="panel">
+<form id="settingsForm" class="adminform">
+</form>
+<div class="form-actions">
+<button class="btn primary" id="saveSettings">Save settings</button>
+</div>
+</div>
+<div class="panel" style="margin-top:16px">
+<h3>Data portability & recovery</h3>
+<p>Export a JSON snapshot, or import a validated demo snapshot to replace local records.</p>
+<div class="actions">
+<button class="btn outline" id="exportData">Export JSON</button>
+<label class="btn outline" for="importFile">Import JSON</label>
+<input id="importFile" type="file" accept="application/json,.json" class="hidden">
+<button class="btn danger" id="resetData">Reset demo data</button>
+</div>
+<div class="banner">The admin PIN is a client-side demo gate, not secure authentication. Production use requires server-side authentication, authorization, and validation. LocalStorage and BroadcastChannel sync compatible tabs in this browser only; they do not provide a server, shared multi-device database, or cross-user synchronization.</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<footer class="footer">
+<div class="wrap footergrid">
+<div>
+<strong>World Electronics</strong>
+<p>Technology, made useful.</p>
+</div>
+<div class="notice">Illustrative demo data only. No live inventory or prices are represented. Local browser storage is not a secure database. Store contact, hours, address, and messaging details are configurable in the admin settings.</div>
+<button class="btn small" id="footerAdmin">Admin portal</button>
+</div>
+</footer>
+<div class="toaststack" id="toastStack" aria-live="polite" aria-atomic="false">
+</div>
+<dialog id="pinDialog">
+<div class="modalhead">
+<h2>Admin access</h2>
+<button class="iconbtn" data-close="pinDialog" aria-label="Close">✕</button>
+</div>
+<form id="pinForm" class="modalbody">
+<p>Enter the demo PIN to open store management.</p>
+<div class="field">
+<label for="pinInput">Demo PIN</label>
+<div style="display:flex;gap:8px">
+<input id="pinInput" class="control" type="password" inputmode="numeric" autocomplete="off" required>
+<button class="btn outline" type="button" id="pinToggle">Show</button>
+</div>
+<div class="notice">This PIN is stored in the browser and does not provide production security.</div>
+</div>
+<div class="form-actions">
+<button type="button" class="btn outline" data-close="pinDialog">Cancel</button>
+<button class="btn primary" type="submit">Enter admin</button>
+</div>
+</form>
+</dialog>
+<dialog id="detailDialog">
+<div class="modalhead">
+<h2 id="detailTitle">Product details</h2>
+<button class="iconbtn" data-close="detailDialog" aria-label="Close">✕</button>
+</div>
+<div id="detailContent" class="modalbody">
+</div>
+</dialog>
+<dialog id="compareDialog">
+<div class="modalhead">
+<h2>Compare products</h2>
+<button class="iconbtn" data-close="compareDialog" aria-label="Close">✕</button>
+</div>
+<div id="compareContent" class="modalbody">
+</div>
+</dialog>
+<dialog id="wishDialog">
+<div class="modalhead">
+<h2>Your wishlist</h2>
+<button class="iconbtn" data-close="wishDialog" aria-label="Close">✕</button>
+</div>
+<div id="wishContent" class="modalbody">
+</div>
+</dialog>
+<dialog id="inquiryDialog">
+<div class="modalhead">
+<h2>Request a call back</h2>
+<button class="iconbtn" data-close="inquiryDialog" aria-label="Close">✕</button>
+</div>
+<form id="inquiryForm" class="modalbody">
+<div class="banner">A local demonstration request will appear in the Admin portal. No message is sent automatically.</div>
+<div class="adminform">
+<div class="field">
+<label for="inqName">Your name</label>
+<input id="inqName" required maxlength="80">
+</div>
+<div class="field">
+<label for="inqContact">Email or phone</label>
+<input id="inqContact" required maxlength="120">
+</div>
+<div class="field">
+<label for="inqType">Request type</label>
+<select id="inqType">
+<option>Repair service</option>
+<option>Product question</option>
+<option>Restock request</option>
+<option>General support</option>
+</select>
+</div>
+<div class="field">
+<label for="inqProduct">Product or service</label>
+<select id="inqProduct">
+<option value="">General request</option>
+</select>
+</div>
+<div class="field wide">
+<label for="inqMessage">How can we help?</label>
+<textarea id="inqMessage" maxlength="1000" required>
+</textarea>
+</div>
+</div>
+<div class="form-actions">
+<button type="button" class="btn outline" data-close="inquiryDialog">Cancel</button>
+<button class="btn primary">Save inquiry</button>
+</div>
+</form>
+</dialog>
+<script src="app.js" defer>
+</script>
+</body>
+</html>
