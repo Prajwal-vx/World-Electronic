@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#1e40af">
 <meta name="application-name" content="World Electronics">
-<title>World Electronics — Technology, made useful.</title>
-<meta name="description" content="Shop everyday electronics, get expert repair support, and find practical technology recommendations from World Electronics.">
+<title>World Electronics — Technology for everyone.</title>
+<meta name="description" content="Explore computers, electronics, accessories, and repair support from World Electronics in Birtamode, Jhapa, Nepal.">
 <link rel="canonical" href="/" id="canonicalUrl">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="World Electronics">
-<meta property="og:title" content="World Electronics — Technology, made useful.">
-<meta property="og:description" content="Shop everyday electronics, get expert repair support, and find practical technology recommendations.">
+<meta property="og:title" content="World Electronics — Technology for everyone.">
+<meta property="og:description" content="Explore computers, electronics, accessories, and repair support in Birtamode, Jhapa, Nepal.">
 <meta property="og:image" content="/og-image.svg">
 <meta name="google-site-verification" content="" id="googleVerification">
-<script type="application/ld+json" id="organizationSchema">{"@context":"https://schema.org","@type":"Organization","name":"World Electronics","url":"/","logo":"/favicon.svg","description":"Technology products and repair support."}</script>
+<script type="application/ld+json" id="organizationSchema">{"@context":"https://schema.org","@type":"Organization","name":"World Electronics","address":{"@type":"PostalAddress","addressLocality":"Birtamode","addressRegion":"Jhapa","addressCountry":"NP"},"url":"/","logo":"/favicon.svg","description":"Computers, electronics, and repair support in Birtamode, Nepal."}</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -25,8 +25,8 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="topline">Thoughtful technology. Friendly expert support. <span>·</span>
-<span id="demoTag">Demo catalog — sample products and prices</span>
+<div class="topline"><span>Serving Birtamode, Jhapa, Nepal</span><span>·</span>
+<span id="demoTag">Sample catalog and prices · Contact us to confirm availability</span>
 </div>
 <header class="nav" id="nav">
 <div class="wrap navinner">
@@ -35,20 +35,24 @@
 <span>World Electronics</span>
 </a>
 <nav class="links" id="mainLinks" aria-label="Main navigation">
+<a href="#home">Home</a>
 <a href="#catalog">Shop</a>
-<a href="#services">Repairs</a>
-<a href="#passport">TechCare</a>
+<a href="#brands">Brands</a>
+<a href="#build-pc">Build a PC</a>
+<a href="#services">Rapid Repair</a>
 </nav>
 <div class="spacer">
 </div>
 <label class="searchnav">
 <span class="searchico">⌕</span>
-<input id="navSearch" placeholder="Search products…" aria-label="Search products">
+<input id="navSearch" placeholder="Search laptops, printers, accessories…" aria-label="Search products">
 </label>
+<button class="iconbtn mobile-search-toggle" id="mobileSearchToggle" type="button" aria-label="Show product search" aria-expanded="false">⌕</button>
 <button class="iconbtn" id="wishNav" aria-label="Open wishlist">♡ <span id="wishCount">0</span>
 </button>
 <button class="iconbtn" id="compareNav" aria-label="Open comparison">⇄ <span id="compareCount">0</span>
 </button>
+<button class="iconbtn cart-nav" id="cartNav" aria-label="Open shopping cart">Cart <span id="cartCount">0</span></button>
 <button class="btn small outline" id="adminEntry">Admin</button>
 <button class="iconbtn" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false">☾</button>
 <button class="iconbtn hamb" id="menuToggle" aria-label="Open navigation menu" aria-controls="mainLinks" aria-expanded="false">☰</button>
@@ -63,14 +67,15 @@
 <div class="hero-grid">
 <div>
 <div class="eyebrow">Technology, made useful</div>
-<h1>Find Your Next Favorite Technology.</h1>
-<p>Shop smarter, get expert repair support, and make technology work for you.</p>
+<h1>Technology for work, play, and <span class="hero-accent">everything in between.</span></h1>
+<p>Explore computers, electronics, and practical support from your local technology store in Birtamode.</p>
 <div class="actions">
-<a class="btn primary" href="#catalog">Browse Products <span>→</span>
+<a class="btn primary" href="#catalog">Explore the catalog <span>→</span>
 </a>
-<a class="btn outline" href="#techmatch">Find My Ideal Tech</a>
-<a class="btn outline" href="#services">Explore Repair Services</a>
-<button class="btn dark" id="directionsBtn">Get Directions ↗</button>
+<a class="btn outline" href="#build-pc">Build your PC</a>
+<a class="btn outline" href="#services">Repair &amp; support</a>
+<a class="btn dark" href="#contact">Visit us in Birtamode ↗</a>
+<button class="btn outline" id="directionsBtn" type="button">Open area map ↗</button>
 </div>
 <div class="statusline">
 <span class="live-dot" id="storeDot">
@@ -84,24 +89,34 @@
 </i> Live sync ready</span>
 </div>
 </div>
-<div class="hero-art" aria-label="Illustration of modern technology">
-<div class="art-label">A better everyday, connected</div>
-<div class="device-stack">
-<div class="device laptop">⌨</div>
-<div class="device phone">▣</div>
-<div class="device tablet">▭</div>
-</div>
+<div class="hero-art" aria-label="A dark tabletop showcase of everyday electronics and accessories">
+<div class="art-label">Technology for everyone <span>WORLD ELECTRONICS / BIRTAMODE</span></div>
+<img class="hero-product-img" src="assets/electronics-showcase.png" alt="Smartphone, smartwatch, wireless earbuds, charging accessories, and cables arranged on a dark tabletop" fetchpriority="high" decoding="async">
+<div class="hero-product-note"><span class="note-dot"></span>Find your next everyday essential</div>
+<div class="hero-product-index">DEVICES, THOUGHTFULLY CHOSEN</div>
 </div>
 </div>
 <div class="highlights">
-<div class="highlight">
-<span>⌂</span> Home Appliances</div>
-<div class="highlight">
-<span>▰</span> Laptops & PCs</div>
-<div class="highlight">
-<span>▣</span> Mobile Devices</div>
-<div class="highlight">
-<span>⚙</span> Reliable Repairs</div>
+<div class="highlight"><span>✦</span><span><small>THOUGHTFULLY CHOSEN</small>Technology for real life</span></div>
+<div class="highlight"><span>⌕</span><span><small>LOCAL EXPERTISE</small>Friendly, practical advice</span></div>
+<div class="highlight"><span>⚙</span><span><small>HERE TO HELP</small>Repairs &amp; device support</span></div>
+<div class="highlight"><span>↗</span><span><small>WORLD ELECTRONICS</small>Built around your needs</span></div>
+</div>
+</div>
+</section>
+<section class="category-showcase" aria-labelledby="categoryTitle">
+<div class="wrap">
+<div class="section-head category-heading">
+<div><div class="eyebrow">Find your next essential</div><h2 id="categoryTitle">Shop by category</h2><p>Explore the tech that makes everyday a little easier.</p></div>
+<a class="category-viewall" href="#catalog">View all products <span>↗</span></a>
+</div>
+<div class="category-grid">
+<a class="category-card" href="#catalog" data-category="Mobile &amp; Tablets"><span class="category-number">01</span><img src="https://cdn.cs.1worldsync.com/44/16/44161717-4a75-40eb-bd46-293c8bc73b3e.jpg" alt="Premium smartphone" loading="lazy"><span class="category-label"><strong>Phones &amp; tablets</strong><small>Explore mobile <b>↗</b></small></span></a>
+<a class="category-card" href="#catalog" data-category="Laptops &amp; PCs"><span class="category-number">02</span><img src="https://www.acervietnam.com.vn/wp-content/uploads/2021/01/Laptop-Van-Phong-Mong-Nhe-Acer-Aspire-5-2023-1-scaled.webp" alt="Everyday laptop" loading="lazy"><span class="category-label"><strong>Laptops &amp; PCs</strong><small>Explore computing <b>↗</b></small></span></a>
+<a class="category-card" href="#catalog" data-category="Accessories"><span class="category-number">03</span><img src="https://techhouse.sg/cdn/shop/files/WH-CH720N_Black_Swivel-Large.jpg?v=1755307892&amp;width=1946" alt="Wireless headphones" loading="lazy"><span class="category-label"><strong>Audio &amp; accessories</strong><small>Explore essentials <b>↗</b></small></span></a>
+<a class="category-card" href="#catalog" data-category="Home Appliances"><span class="category-number">04</span><img src="https://www.lg.com/content/dam/channel/wcms/my/images/tvs/55uq7550psf_ats_eaml_my_c/gallery/MZ_02_VF.jpg" alt="4K smart television" loading="lazy"><span class="category-label"><strong>Home technology</strong><small>Explore home <b>↗</b></small></span></a>
+<a class="category-card" href="#catalog" data-category="Printers"><span class="category-number">05</span><img src="https://www.epson-centralasia.com/_next/image?q=75&amp;url=https%3A%2F%2Fcdn.pdx.stibosystems.com%2Fsubmitted%2Fassets%2F73fc40d2-58cf-334d-a8ab-be4ebec69b2e%2Fceb1fedd-7d44-5493-b388-71ddc8d6d451%2Fceb1fedd-7d44-5493-b388-71ddc8d6d451_m_png_1.png%3Fv%3D1762979357273&amp;w=3840" alt="Epson EcoTank L3250 all-in-one printer" loading="lazy" referrerpolicy="no-referrer"><span class="category-label"><strong>Printers</strong><small>Explore office tech <b>↗</b></small></span></a>
+<a class="category-card" href="#catalog" data-category="Networking"><span class="category-number">06</span><img src="https://static.tp-link.com/Archer-C6-1_normal_1533257570157g.jpg" alt="TP-Link Archer C6 wireless router" loading="lazy" referrerpolicy="no-referrer"><span class="category-label"><strong>Networking</strong><small>Stay connected <b>↗</b></small></span></a>
 </div>
 </div>
 </section>
@@ -111,8 +126,8 @@
 <div class="section-head">
 <div>
 <div class="eyebrow">Curated for everyday life</div>
-<h2>Shop the collection</h2>
-<p>Browse a sample catalog. Availability and prices are illustrative demo data.</p>
+<h2>Shop product models</h2>
+<p>Browse 15 or more sample models for each featured brand. Model details, representative photos, prices, and stock quantities are demo data; contact World Electronics to confirm exact products and availability.</p>
 </div>
 <button class="btn outline" id="clearFiltersTop">Clear filters</button>
 </div>
@@ -128,12 +143,13 @@
 <label for="categoryFilter">Category</label>
 <select id="categoryFilter">
 <option value="">All Products</option>
-<option>Home Appliances</option>
-<option>Laptops & PCs</option>
-<option>Mobile & Tablets</option>
-<option>Accessories</option>
-<option>Services &amp; Repairs</option>
+<option>Home Appliances</option><option>Laptops &amp; PCs</option><option>Mobile &amp; Tablets</option><option>Accessories</option>
+<option>Apple</option><option>Desktop PCs</option><option>Printers</option><option>Networking</option><option>Storage</option><option>Power solutions</option><option>Displays</option><option>Surveillance</option>
 </select>
+</div>
+<div class="field">
+<label for="brandFilter">Brand</label>
+<select id="brandFilter"><option value="">All brands</option></select>
 </div>
 <div class="field">
 <label for="availabilityFilter">Availability</label>
@@ -155,7 +171,7 @@
 <label for="priceSlider">Maximum price <span id="sliderVal">
 </span>
 </label>
-<input id="priceSlider" type="range" min="0" max="3000" value="3000">
+<input id="priceSlider" type="range" min="0" max="250000" value="250000">
 </div>
 <label class="check">
 <input id="featuredFilter" type="checkbox"> Featured only</label>
@@ -169,7 +185,7 @@
 <option value="featured">Recommended</option>
 <option value="price-up">Price: low to high</option>
 <option value="price-down">Price: high to low</option>
-<option value="rating">Top rated</option>
+<option value="discount">Discount</option>
 <option value="stock">Availability</option>
 </select>
 </div>
@@ -182,6 +198,43 @@
 </div>
 </div>
 </div>
+</div>
+</section>
+<section id="offers" class="offer-section" aria-labelledby="offerTitle">
+<div class="wrap">
+<div class="section-head"><div><div class="eyebrow">Selected sample offers</div><h2 id="offerTitle">On sale</h2><p>Discounts below are illustrative demo data, not live promotions.</p></div><a class="category-viewall" href="#catalog">Shop all products <span>↗</span></a></div>
+<div id="saleGrid" class="grid" aria-live="polite"><div class="empty">Loading sample offers…</div></div>
+</div>
+</section>
+<section class="catalog-promos" aria-label="Featured shopping">
+<div class="wrap promo-grid">
+<a class="promo-card promo-deals" href="#catalog">
+<span class="eyebrow">Worth a closer look</span><h2>Featured picks</h2>
+<p>Browse selected products from our sample catalog. Ask us to confirm current pricing and stock.</p><span class="promo-link">Explore products <b>→</b></span>
+</a>
+<div class="promo-card promo-build" id="build-pc">
+<span class="eyebrow">Made for your setup</span><h2>Build your own PC</h2>
+<p>Tell us what you need for gaming, work, or home and request a component recommendation.</p><span class="promo-link">Ask about a custom build <b>→</b></span>
+<label class="field pc-use-field" for="pcUse">What are you building for?
+<select id="pcUse"><option>Gaming</option><option>Office work</option><option>Home and study</option></select></label>
+<button class="btn primary" id="pcQuoteBtn" type="button">Request component advice</button>
+</div>
+</div>
+</section>
+<section class="brand-section" id="brands" aria-labelledby="brandTitle">
+<div class="wrap">
+<div class="section-head"><div><div class="eyebrow">Find a familiar name</div><h2 id="brandTitle">Shop by brand</h2><p>Use a brand to narrow the sample catalog.</p></div><a class="category-viewall" href="#catalog">Browse all products <span>↗</span></a></div>
+<div class="brand-list" aria-label="Featured brands">
+<button type="button" data-brand="Apple" aria-label="Browse Apple models">Apple<small>15+ models</small></button><button type="button" data-brand="Acer" aria-label="Browse Acer models">Acer<small>15+ models</small></button><button type="button" data-brand="ASUS" aria-label="Browse ASUS models">ASUS<small>15+ models</small></button><button type="button" data-brand="Lenovo" aria-label="Browse Lenovo models">Lenovo<small>15+ models</small></button><button type="button" data-brand="HP" aria-label="Browse HP models">HP<small>15+ models</small></button><button type="button" data-brand="Samsung" aria-label="Browse Samsung models">Samsung<small>15+ models</small></button><button type="button" data-brand="Sony" aria-label="Browse Sony models">Sony<small>15+ models</small></button><button type="button" data-brand="Logitech" aria-label="Browse Logitech models">Logitech<small>15+ models</small></button>
+</div>
+</div>
+</section>
+<section class="trust-strip" aria-label="Store information">
+<div class="wrap trust-grid">
+<div><strong>Local support</strong><span>Visit World Electronics in Birtamode, Jhapa.</span></div>
+<div><strong>Product guidance</strong><span>Ask our team about the right setup for you.</span></div>
+<div><strong>Repair assistance</strong><span>Get in touch to discuss diagnostics and service.</span></div>
+<div><strong>Sample catalog</strong><span>Prices and stock are not live; please confirm with us.</span></div>
 </div>
 </section>
 <section class="faq" id="faq"><div class="wrap"><div class="eyebrow">Helpful answers</div><h2>Frequently asked questions</h2>
@@ -216,9 +269,9 @@
 <div class="field">
 <label for="matchBudget">Your budget</label>
 <select id="matchBudget">
-<option value="800">Up to NPR 800</option>
-<option value="1500">Up to NPR 1,500</option>
-<option value="3000">Up to NPR 3,000</option>
+<option value="50000">Up to NPR 50,000</option>
+<option value="100000">Up to NPR 100,000</option>
+<option value="200000">Up to NPR 200,000</option>
 <option value="999999">Flexible budget</option>
 </select>
 </div>
@@ -260,14 +313,17 @@
 <div class="section-head">
 <div>
 <div class="eyebrow">Here when you need a hand</div>
-<h2>Repair & support</h2>
-<p>Clear next steps from friendly, knowledgeable technicians.</p>
+<h2>Rapid Repair &amp; support</h2>
+<p>Contact the store to discuss laptop, desktop, and electronics troubleshooting. Service availability is confirmed case by case.</p>
 </div>
 <button class="btn primary" id="repairInquiryBtn">Request support</button>
 </div>
 <div class="servicegrid" id="serviceGrid">
 </div>
 </div>
+</section>
+<section id="contact" class="contact-band">
+<div class="wrap contact-card"><div><div class="eyebrow">Local technology store</div><h2>Visit World Electronics</h2><p>Birtamode, Jhapa, Nepal</p><p>For verified phone, email, hours, and directions, contact details will be added by the store operator.</p></div><a class="btn primary" href="#services">Ask a question</a></div>
 </section>
 <section id="trust" style="padding-top:0">
 <div class="wrap">
@@ -448,13 +504,13 @@
 <div class="wrap footergrid">
 <div>
 <a class="footer-brand" href="#home"><strong>World Electronics</strong></a>
-<p>Technology, made useful.</p>
+<p>Computers, electronics &amp; local support in Birtamode.</p>
 <div id="footerContact" class="footer-contact"></div>
 </div>
-<div class="notice">Illustrative demo data only. No live inventory or prices are represented. Store contact, hours, address, and messaging details are configurable in admin settings.</div>
-<div class="footer-links"><a href="#catalog">Shop</a><a href="#services">Repairs</a><a href="#passport">TechCare</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><button class="btn small" id="footerAdmin">Admin portal</button></div>
+<div class="notice">Sample catalog and prices only. No live inventory, discounts, delivery claims, reviews, or payment processing are represented.</div>
+<div class="footer-links"><a href="#catalog">Shop</a><a href="#brands">Brands</a><a href="#build-pc">PC builds</a><a href="#services">Repair support</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><button class="btn small" id="footerAdmin">Admin portal</button></div>
 </div>
-<div class="wrap copyright">© <span id="copyrightYear"></span> World Electronics</div>
+<div class="wrap copyright">© <span id="copyrightYear"></span> World Electronics · Birtamode, Nepal</div>
 <button class="btn outline small" id="copyPageLink" type="button">Copy page link</button>
 </footer>
 <div class="cookie-banner" id="cookieBanner" role="region" aria-label="Privacy preferences" hidden>
@@ -524,6 +580,20 @@
 <button class="iconbtn" data-close="wishDialog" aria-label="Close">✕</button>
 </div>
 <div id="wishContent" class="modalbody">
+</div>
+</dialog>
+<dialog id="cartDialog">
+<div class="modalhead"><h2>Your cart</h2><button class="iconbtn" data-close="cartDialog" aria-label="Close cart">✕</button></div>
+<div id="cartContent" class="modalbody"></div>
+</dialog>
+<dialog id="checkoutDialog">
+<div class="modalhead"><h2>Checkout preview</h2><button class="iconbtn" data-close="checkoutDialog" aria-label="Close checkout">✕</button></div>
+<div class="modalbody">
+<div class="banner"><strong>Checkout is not connected.</strong> This prototype cannot submit orders or accept payment. No order has been placed and no payment will be taken.</div>
+<h3>Delivery details</h3>
+<p>For a real order, the store would confirm your contact number, province, district, municipality, ward, and delivery option directly.</p>
+<h3>Payment</h3><p>No online payment method is configured. Contact World Electronics to confirm purchasing options.</p>
+<button class="btn outline" type="button" data-close="checkoutDialog">Return to shopping</button>
 </div>
 </dialog>
 <dialog id="inquiryDialog">

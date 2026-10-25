@@ -19,33 +19,47 @@ const CONFIG = Object.freeze({
   prefix: 'worldElectronics.v1',
   channel: 'world-electronics-sync-v1',
   schema: 1,
-  categories: Object.freeze(['Home Appliances', 'Laptops & PCs', 'Mobile & Tablets', 'Accessories']),
+  categories: Object.freeze([
+    'Home Appliances', 'Laptops & PCs', 'Mobile & Tablets', 'Accessories', 'Apple',
+    'Desktop PCs', 'Printers', 'Networking', 'Storage', 'Power solutions', 'Displays', 'Surveillance'
+  ]),
   icons: Object.freeze({
     'Home Appliances': '⌂',
     'Laptops & PCs': '▰',
     'Mobile & Tablets': '▣',
-    'Accessories': '⌘'
+    'Accessories': '⌘',
+    Apple: '◉',
+    'Desktop PCs': '▣',
+    Printers: '▤',
+    Networking: '⌁',
+    Storage: '▰',
+    'Power solutions': 'ϟ',
+    Displays: '▭',
+    Surveillance: '◉'
   }),
   maxImportBytes: 2 * 1024 * 1024 // 2 MB limit
 });
 
 const seedProducts = [
-  { id: 'lap-study-01', name: 'Everyday Student Laptop', brand: 'Acer', model: 'Aspire 5 A515', category: 'Laptops & PCs', price: 649, previousPrice: 699, stock: 12, threshold: 4, featured: true, published: true, description: 'A dependable everyday laptop for classes, research, and streaming. Comfortable keyboard, quick startup, and room to grow.', specs: { Processor: 'Intel Core i5', Memory: '16 GB', Storage: '512 GB SSD', Display: '15.6” Full HD' }, keywords: ['student', 'study', 'laptop', 'school'], warranty: '1 year limited', rating: 4.6, icon: '💻' },
-  { id: 'lap-work-02', name: 'Pro Productivity Laptop', brand: 'Lenovo', model: 'ThinkPad E14 Gen 5', category: 'Laptops & PCs', price: 1199, previousPrice: 1299, stock: 3, threshold: 4, featured: true, published: true, description: 'A focused work companion with a durable build, clear display, and reliable performance for busy days.', specs: { Processor: 'AMD Ryzen 7', Memory: '16 GB', Storage: '1 TB SSD', Display: '14” WUXGA' }, keywords: ['office', 'business', 'work', 'portable'], warranty: '1 year limited', rating: 4.8, icon: '🖥️' },
-  { id: 'lap-game-03', name: 'Performance Gaming Laptop', brand: 'ASUS', model: 'TUF Gaming A15', category: 'Laptops & PCs', price: 1599, previousPrice: null, stock: 0, threshold: 3, featured: true, published: true, description: 'A capable gaming and creative-work machine with a high-refresh display and dedicated graphics.', specs: { Processor: 'AMD Ryzen 7', Memory: '16 GB', Graphics: 'GeForce RTX 4060', Display: '15.6” 144 Hz' }, keywords: ['gaming', 'creator', 'graphics', 'high performance'], warranty: '1 year limited', rating: 4.7, icon: '🎮' },
-  { id: 'pc-home-04', name: 'Compact Home Desktop', brand: 'HP', model: 'Pavilion TP01', category: 'Laptops & PCs', price: 899, previousPrice: null, stock: 6, threshold: 3, featured: false, published: true, description: 'A tidy desktop setup for home computing, family projects, and video calls.', specs: { Processor: 'Intel Core i5', Memory: '16 GB', Storage: '512 GB SSD', Connectivity: 'Wi-Fi 6' }, keywords: ['desktop', 'home office', 'family'], warranty: '1 year limited', rating: 4.4, icon: '🖥️' },
-  { id: 'mob-premium-05', name: 'Pro Camera Smartphone', brand: 'Samsung', model: 'Galaxy S24', category: 'Mobile & Tablets', price: 999, previousPrice: 1099, stock: 8, threshold: 3, featured: true, published: true, description: 'A premium everyday smartphone with a vivid display, capable camera system, and long software support.', specs: { Display: '6.2” AMOLED', Storage: '256 GB', Camera: '50 MP triple camera', Connectivity: '5G' }, keywords: ['phone', 'smartphone', 'camera', 'android'], warranty: '1 year limited', rating: 4.8, icon: '📱' },
-  { id: 'mob-android-06', name: 'Everyday Android Phone', brand: 'Motorola', model: 'Edge 50 Fusion', category: 'Mobile & Tablets', price: 499, previousPrice: null, stock: 2, threshold: 4, featured: false, published: true, description: 'A balanced smartphone with a bright screen, dependable battery, and plenty of space for daily essentials.', specs: { Display: '6.7” pOLED', Storage: '256 GB', Camera: '50 MP', Battery: '5000 mAh' }, keywords: ['phone', 'android', 'value', '5g'], warranty: '1 year limited', rating: 4.3, icon: '📱' },
-  { id: 'mob-budget-07', name: 'Simple Budget Smartphone', brand: 'Nokia', model: 'G42 5G', category: 'Mobile & Tablets', price: 229, previousPrice: 259, stock: 15, threshold: 5, featured: false, published: true, description: 'An approachable, easy-to-use smartphone with solid battery life and everyday connectivity.', specs: { Display: '6.56” HD+', Storage: '128 GB', Battery: '5000 mAh', Connectivity: '5G' }, keywords: ['budget', 'phone', 'starter', 'value'], warranty: '1 year limited', rating: 4.1, icon: '📲' },
-  { id: 'tab-08', name: 'Everyday Tablet', brand: 'Apple', model: 'iPad 10th Gen', category: 'Mobile & Tablets', price: 449, previousPrice: null, stock: 5, threshold: 3, featured: true, published: true, description: 'A versatile tablet for reading, learning, video calls, and creative downtime.', specs: { Display: '10.9” Liquid Retina', Storage: '64 GB', Connectivity: 'Wi-Fi', Camera: '12 MP' }, keywords: ['tablet', 'ipad', 'study', 'portable'], warranty: '1 year limited', rating: 4.7, icon: '📟' },
-  { id: 'tv-09', name: '4K Smart Television', brand: 'LG', model: 'UQ75 55-inch', category: 'Home Appliances', price: 699, previousPrice: 799, stock: 4, threshold: 3, featured: true, published: true, description: 'A crisp 4K screen with built-in streaming apps for a welcoming family entertainment setup.', specs: { Display: '55” 4K UHD', HDR: 'HDR10', Smart: 'webOS', Connectivity: 'Wi-Fi, HDMI' }, keywords: ['tv', 'television', 'living room', '4k'], warranty: '2 years limited', rating: 4.5, icon: '📺' },
-  { id: 'fridge-10', name: 'Frost-Free Family Refrigerator', brand: 'Whirlpool', model: 'WRT318FZDM', category: 'Home Appliances', price: 1099, previousPrice: null, stock: 1, threshold: 3, featured: false, published: true, description: 'A practical frost-free refrigerator with flexible shelves and generous family storage.', specs: { Capacity: '18 cu. ft.', Type: 'Top freezer', Finish: 'Stainless look', Efficiency: 'ENERGY STAR' }, keywords: ['fridge', 'refrigerator', 'kitchen', 'appliance'], warranty: '1 year limited', rating: 4.4, icon: '🧊' },
-  { id: 'washer-11', name: 'Front-Load Washing Machine', brand: 'Samsung', model: 'WF45T6000AW', category: 'Home Appliances', price: 849, previousPrice: 949, stock: 7, threshold: 3, featured: false, published: true, description: 'An efficient front-load washer with helpful cycles and a generous drum for busy households.', specs: { Capacity: '4.5 cu. ft.', Type: 'Front load', Cycles: '12', Efficiency: 'ENERGY STAR' }, keywords: ['washer', 'washing machine', 'laundry'], warranty: '1 year limited', rating: 4.6, icon: '🫧' },
-  { id: 'micro-12', name: 'Compact Countertop Microwave', brand: 'Panasonic', model: 'NN-SN67KS', category: 'Home Appliances', price: 189, previousPrice: null, stock: 10, threshold: 3, featured: false, published: true, description: 'Quick, even heating in a compact format that fits neatly on a countertop.', specs: { Capacity: '1.2 cu. ft.', Power: '1200 W', Controls: 'Inverter', Finish: 'Stainless steel' }, keywords: ['microwave', 'kitchen', 'appliance'], warranty: '1 year limited', rating: 4.3, icon: '♨️' },
-  { id: 'audio-13', name: 'Wireless Noise-Canceling Headphones', brand: 'Sony', model: 'WH-CH720N', category: 'Accessories', price: 149, previousPrice: 179, stock: 0, threshold: 4, featured: true, published: true, description: 'Lightweight wireless headphones for focused listening, calls, and commutes.', specs: { Connection: 'Bluetooth 5.2', Battery: 'Up to 35 hours', NoiseControl: 'Active noise canceling', Mic: 'Built-in' }, keywords: ['headphones', 'audio', 'wireless', 'commute'], warranty: '1 year limited', rating: 4.5, icon: '🎧' },
-  { id: 'keyboard-14', name: 'Wireless Keyboard & Mouse Set', brand: 'Logitech', model: 'MK540', category: 'Accessories', price: 69, previousPrice: null, stock: 9, threshold: 4, featured: false, published: true, description: 'A comfortable wireless desktop set with a familiar layout and easy setup.', specs: { Connection: '2.4 GHz USB receiver', Layout: 'Full-size', Battery: 'Long-life', Compatibility: 'Windows, ChromeOS' }, keywords: ['keyboard', 'mouse', 'office', 'accessory'], warranty: '1 year limited', rating: 4.4, icon: '⌨️' },
-  { id: 'charger-15', name: '65W USB-C Fast Charger', brand: 'Anker', model: 'Nano II 65W', category: 'Accessories', price: 39, previousPrice: 49, stock: 2, threshold: 5, featured: false, published: true, description: 'A compact USB-C charger for compatible phones, tablets, and many laptops.', specs: { Output: '65 W max', Ports: '1 × USB-C', Technology: 'GaN II', Compatibility: 'USB-C PD devices' }, keywords: ['charger', 'usb c', 'power', 'travel'], warranty: '18 months', rating: 4.6, icon: '🔌' },
-  { id: 'storage-16', name: 'Portable SSD 1TB', brand: 'Samsung', model: 'T7 Shield', category: 'Accessories', price: 119, previousPrice: null, stock: 14, threshold: 4, featured: false, published: true, description: 'Fast portable storage with a rugged exterior for creative projects and everyday backups.', specs: { Capacity: '1 TB', Interface: 'USB 3.2 Gen 2', Speed: 'Up to 1050 MB/s', Protection: 'IP65 rated' }, keywords: ['ssd', 'storage', 'backup', 'portable'], warranty: '3 years limited', rating: 4.8, icon: '💾' }
+  { id: 'lap-study-01', name: 'Everyday Student Laptop', brand: 'Acer', model: 'Aspire 5 A515', category: 'Laptops & PCs', price: 105000, previousPrice: 115000, stock: 12, threshold: 4, featured: true, published: true, description: 'A dependable everyday laptop for classes, research, and streaming. Comfortable keyboard, quick startup, and room to grow.', specs: { Processor: 'Intel Core i5', Memory: '16 GB', Storage: '512 GB SSD', Display: '15.6” Full HD' }, keywords: ['student', 'study', 'laptop', 'school'], warranty: 'Ask store to confirm', icon: '💻' },
+  { id: 'lap-work-02', name: 'Pro Productivity Laptop', brand: 'Lenovo', model: 'ThinkPad E14 Gen 5', category: 'Laptops & PCs', price: 139000, previousPrice: null, stock: 3, threshold: 4, featured: true, published: true, description: 'A focused work companion with a durable build, clear display, and reliable performance for busy days.', specs: { Processor: 'AMD Ryzen 7', Memory: '16 GB', Storage: '1 TB SSD', Display: '14” WUXGA' }, keywords: ['office', 'business', 'work', 'portable'], warranty: 'Ask store to confirm', icon: '🖥️' },
+  { id: 'lap-game-03', name: 'Performance Gaming Laptop', brand: 'ASUS', model: 'TUF Gaming A15', category: 'Laptops & PCs', price: 185000, previousPrice: null, stock: 0, threshold: 3, featured: true, published: true, description: 'A capable gaming and creative-work machine with a high-refresh display and dedicated graphics.', specs: { Processor: 'AMD Ryzen 7', Memory: '16 GB', Graphics: 'GeForce RTX 4060', Display: '15.6” 144 Hz' }, keywords: ['gaming', 'creator', 'graphics', 'high performance'], warranty: 'Ask store to confirm', icon: '🎮' },
+  { id: 'pc-home-04', name: 'Compact Home Desktop', brand: 'HP', model: 'Pavilion TP01', category: 'Desktop PCs', price: 125000, previousPrice: null, stock: 6, threshold: 3, featured: false, published: true, description: 'A tidy desktop setup for home computing, family projects, and video calls.', specs: { Processor: 'Intel Core i5', Memory: '16 GB', Storage: '512 GB SSD', Connectivity: 'Wi-Fi 6' }, keywords: ['desktop', 'home office', 'family'], warranty: 'Ask store to confirm', icon: '🖥️' },
+  { id: 'mob-premium-05', name: 'Pro Camera Smartphone', brand: 'Samsung', model: 'Galaxy S24', category: 'Mobile & Tablets', price: 105000, previousPrice: 115000, stock: 8, threshold: 3, featured: true, published: true, description: 'A premium everyday smartphone with a vivid display, capable camera system, and long software support.', specs: { Display: '6.2” AMOLED', Storage: '256 GB', Camera: '50 MP triple camera', Connectivity: '5G' }, keywords: ['phone', 'smartphone', 'camera', 'android'], warranty: 'Ask store to confirm', icon: '📱' },
+  { id: 'mob-android-06', name: 'Everyday Android Phone', brand: 'Motorola', model: 'Edge 50 Fusion', category: 'Mobile & Tablets', price: 65000, previousPrice: null, stock: 2, threshold: 4, featured: false, published: true, description: 'A balanced smartphone with a bright screen, dependable battery, and plenty of space for daily essentials.', specs: { Display: '6.7” pOLED', Storage: '256 GB', Camera: '50 MP', Battery: '5000 mAh' }, keywords: ['phone', 'android', 'value', '5g'], warranty: 'Ask store to confirm', icon: '📱' },
+  { id: 'mob-budget-07', name: 'Simple Budget Smartphone', brand: 'Nokia', model: 'G42 5G', category: 'Mobile & Tablets', price: 39000, previousPrice: null, stock: 15, threshold: 5, featured: false, published: true, description: 'An approachable, easy-to-use smartphone with solid battery life and everyday connectivity.', specs: { Display: '6.56” HD+', Storage: '128 GB', Battery: '5000 mAh', Connectivity: '5G' }, keywords: ['budget', 'phone', 'starter', 'value'], warranty: 'Ask store to confirm', icon: '📲' },
+  { id: 'tab-08', name: 'Everyday Tablet', brand: 'Apple', model: 'iPad 10th Gen', category: 'Apple', price: 66000, previousPrice: null, stock: 5, threshold: 3, featured: true, published: true, description: 'A versatile tablet for reading, learning, video calls, and creative downtime.', specs: { Display: '10.9” Liquid Retina', Storage: '64 GB', Connectivity: 'Wi-Fi', Camera: '12 MP' }, keywords: ['tablet', 'ipad', 'study', 'portable'], warranty: 'Ask store to confirm', icon: '📟' },
+  { id: 'tv-09', name: '4K Smart Television', brand: 'LG', model: 'UQ75 55-inch', category: 'Displays', price: 92000, previousPrice: null, stock: 4, threshold: 3, featured: true, published: true, description: 'A crisp 4K screen with built-in streaming apps for a welcoming family entertainment setup.', specs: { Display: '55” 4K UHD', HDR: 'HDR10', Smart: 'webOS', Connectivity: 'Wi-Fi, HDMI' }, keywords: ['tv', 'television', 'living room', '4k'], warranty: 'Ask store to confirm', icon: '📺' },
+  { id: 'fridge-10', name: 'Frost-Free Family Refrigerator', brand: 'Whirlpool', model: 'WRT318FZDM', category: 'Home Appliances', price: 105000, previousPrice: null, stock: 1, threshold: 3, featured: false, published: true, description: 'A practical frost-free refrigerator with flexible shelves and generous family storage.', specs: { Capacity: '18 cu. ft.', Type: 'Top freezer', Finish: 'Stainless look' }, keywords: ['fridge', 'refrigerator', 'kitchen', 'appliance'], warranty: 'Ask store to confirm', icon: '🧊' },
+  { id: 'washer-11', name: 'Front-Load Washing Machine', brand: 'Samsung', model: 'WF45T6000AW', category: 'Home Appliances', price: 98000, previousPrice: null, stock: 7, threshold: 3, featured: false, published: true, description: 'An efficient front-load washer with helpful cycles and a generous drum for busy households.', specs: { Capacity: '4.5 cu. ft.', Type: 'Front load', Cycles: '12' }, keywords: ['washer', 'washing machine', 'laundry'], warranty: 'Ask store to confirm', icon: '🫧' },
+  { id: 'micro-12', name: 'Compact Countertop Microwave', brand: 'Panasonic', model: 'NN-SN67KS', category: 'Home Appliances', price: 26000, previousPrice: null, stock: 10, threshold: 3, featured: false, published: true, description: 'Quick, even heating in a compact format that fits neatly on a countertop.', specs: { Capacity: '1.2 cu. ft.', Power: '1200 W', Controls: 'Inverter', Finish: 'Stainless steel' }, keywords: ['microwave', 'kitchen', 'appliance'], warranty: 'Ask store to confirm', icon: '♨️' },
+  { id: 'audio-13', name: 'Wireless Noise-Canceling Headphones', brand: 'Sony', model: 'WH-CH720N', category: 'Accessories', price: 18000, previousPrice: 21000, stock: 0, threshold: 4, featured: true, published: true, description: 'Lightweight wireless headphones for focused listening, calls, and commutes.', specs: { Connection: 'Bluetooth 5.2', Battery: 'Up to 35 hours', NoiseControl: 'Active noise canceling', Mic: 'Built-in' }, keywords: ['headphones', 'audio', 'wireless', 'commute'], warranty: 'Ask store to confirm', icon: '🎧' },
+  { id: 'keyboard-14', name: 'Wireless Keyboard & Mouse Set', brand: 'Logitech', model: 'MK540', category: 'Accessories', price: 11500, previousPrice: null, stock: 9, threshold: 4, featured: false, published: true, description: 'A comfortable wireless desktop set with a familiar layout and easy setup.', specs: { Connection: '2.4 GHz USB receiver', Layout: 'Full-size', Battery: 'Long-life', Compatibility: 'Windows, ChromeOS' }, keywords: ['keyboard', 'mouse', 'office', 'accessory'], warranty: 'Ask store to confirm', icon: '⌨️' },
+  { id: 'charger-15', name: '65W USB-C Fast Charger', brand: 'Anker', model: 'Nano II 65W', category: 'Power solutions', price: 6000, previousPrice: null, stock: 2, threshold: 5, featured: false, published: true, description: 'A compact USB-C charger for compatible phones, tablets, and many laptops.', specs: { Output: '65 W max', Ports: '1 × USB-C', Technology: 'GaN II', Compatibility: 'USB-C PD devices' }, keywords: ['charger', 'usb c', 'power', 'travel'], warranty: 'Ask store to confirm', icon: '🔌' },
+  { id: 'storage-16', name: 'Portable SSD 1TB', brand: 'Samsung', model: 'T7 Shield', category: 'Storage', price: 18000, previousPrice: null, stock: 14, threshold: 4, featured: false, published: true, description: 'Fast portable storage with a rugged exterior for creative projects and everyday backups.', specs: { Capacity: '1 TB', Interface: 'USB 3.2 Gen 2', Speed: 'Up to 1050 MB/s', Protection: 'IP65 rated' }, keywords: ['ssd', 'storage', 'backup', 'portable'], warranty: 'Ask store to confirm', icon: '💾' },
+  { id: 'printer-17', name: 'All-in-One Ink Tank Printer', brand: 'Epson', model: 'EcoTank L3250', category: 'Printers', price: 36000, previousPrice: null, stock: 4, threshold: 2, featured: true, published: true, description: 'A home and small-office printer for everyday document and photo tasks. Confirm local configuration and supplies before purchase.', specs: { Functions: 'Print, scan, copy', Connectivity: 'Wi-Fi, USB', Print: 'Colour ink tank' }, keywords: ['printer', 'office', 'ink tank', 'scanner', 'epson'], warranty: 'Ask store to confirm', icon: '▤' },
+  { id: 'router-18', name: 'Dual-Band Wi-Fi Router', brand: 'TP-Link', model: 'Archer C6', category: 'Networking', price: 8500, previousPrice: null, stock: 7, threshold: 3, featured: false, published: true, description: 'A dual-band router for home and small-office networks. Check ISP and coverage requirements with the store.', specs: { Wireless: 'Dual-band Wi-Fi', Ports: 'Gigabit Ethernet', Setup: 'App or web interface' }, keywords: ['router', 'wifi', 'network', 'tp-link'], warranty: 'Ask store to confirm', icon: '⌁' },
+  { id: 'ups-19', name: 'Line-Interactive UPS', brand: 'APC', model: 'Back-UPS 650VA', category: 'Power solutions', price: 14500, previousPrice: null, stock: 5, threshold: 2, featured: false, published: true, description: 'Backup power and surge protection for compatible home-office equipment. Confirm runtime and load requirements before purchase.', specs: { Capacity: '650 VA', Protection: 'Surge protection', Use: 'Home and office electronics' }, keywords: ['ups', 'backup power', 'surge', 'apc'], warranty: 'Ask store to confirm', icon: 'ϟ' }
 ];
 
 // Remote manufacturer and retailer product photography for the demo catalog.
@@ -65,7 +79,103 @@ const seedProductImages = Object.freeze({
   'audio-13': 'https://techhouse.sg/cdn/shop/files/WH-CH720N_Black_Swivel-Large.jpg?v=1755307892&width=1946',
   'keyboard-14': 'https://www.logitech.com/content/dam/logitech/en/products/combos/mk540-mouse-keyboard-combo/gallery/mk540-br-gallery1.png',
   'charger-15': 'https://cdn.shopify.com/s/files/1/0493/9834/9974/files/A2663111_TD02_V2_3840x.jpg?v=1749625907',
-  'storage-16': 'https://online.challenger.sg/cdn/shop/files/8806092310131_CURDtDLpyA7ZtTVc1sq6AhJifMWNss0u9agQyviw.jpg?v=1755900198'
+  'storage-16': 'https://online.challenger.sg/cdn/shop/files/8806092310131_CURDtDLpyA7ZtTVc1sq6AhJifMWNss0u9agQyviw.jpg?v=1755900198',
+  'printer-17': 'https://www.epson-centralasia.com/_next/image?q=75&url=https%3A%2F%2Fcdn.pdx.stibosystems.com%2Fsubmitted%2Fassets%2F73fc40d2-58cf-334d-a8ab-be4ebec69b2e%2Fceb1fedd-7d44-5493-b388-71ddc8d6d451%2Fceb1fedd-7d44-5493-b388-71ddc8d6d451_m_png_1.png%3Fv%3D1762979357273&w=3840',
+  'router-18': 'https://static.tp-link.com/Archer-C6-1_normal_1533257570157g.jpg'
+});
+
+// Demo brand catalogs expand the visible directory to 15 models per featured brand.
+// Quantities, prices, and specifications below are illustrative, not live inventory.
+const demoBrandModels = Object.freeze({
+  Acer: [
+    ['Aspire 5 A515', 'Laptop', 105000], ['Aspire 14 AI', 'Laptop', 139000], ['Aspire 16 AI', 'Laptop', 154000],
+    ['Aspire Go 14', 'Laptop', 82000], ['Aspire Vero 16', 'Laptop', 148000], ['Swift Go 14 AI OLED', 'Laptop', 169000],
+    ['Swift Go 16 AI OLED', 'Laptop', 185000], ['Swift X 14', 'Laptop', 219000], ['TravelMate P4 Spin 14 AI', 'Laptop', 197000],
+    ['Nitro V 15', 'Laptop', 178000], ['Nitro V 16 AI', 'Laptop', 205000], ['Nitro 16', 'Laptop', 229000],
+    ['Predator Helios Neo 16', 'Laptop', 279000], ['Predator Helios 18 AI', 'Laptop', 389000], ['Chromebook Plus 514', 'Laptop', 76000]
+  ],
+  ASUS: [
+    ['TUF Gaming A15', 'Laptop', 185000], ['Vivobook Go 15', 'Laptop', 85000], ['Vivobook 16', 'Laptop', 112000],
+    ['Vivobook S 14 OLED', 'Laptop', 159000], ['Zenbook 14 OLED', 'Laptop', 198000], ['Zenbook S 13 OLED', 'Laptop', 219000],
+    ['ExpertBook B1', 'Laptop', 119000], ['ExpertBook B5', 'Laptop', 179000], ['TUF Gaming F15', 'Laptop', 179000],
+    ['TUF Gaming A16', 'Laptop', 218000], ['ROG Zephyrus G14', 'Laptop', 329000], ['ROG Strix G16', 'Laptop', 345000],
+    ['ROG Flow X13', 'Laptop', 299000], ['ProArt P16', 'Laptop', 389000], ['Chromebook Plus CX34', 'Laptop', 99000]
+  ],
+  Lenovo: [
+    ['ThinkPad E14 Gen 5', 'Laptop', 139000], ['IdeaPad Slim 3i 15', 'Laptop', 89000], ['IdeaPad Slim 5i 14', 'Laptop', 129000],
+    ['IdeaPad 5x 2-in-1 Gen 11', 'Laptop', 149000], ['Yoga Slim 7i 14', 'Laptop', 189000], ['Yoga 7 2-in-1 14', 'Laptop', 179000],
+    ['ThinkBook 14 Gen 7', 'Laptop', 142000], ['ThinkPad T14 Gen 6', 'Laptop', 239000], ['ThinkPad T14s Gen 6', 'Laptop', 269000],
+    ['ThinkPad P14s Gen 5', 'Laptop', 289000], ['ThinkPad E14 Gen 8', 'Laptop', 159000], ['LOQ Essential 15', 'Laptop', 155000],
+    ['LOQ 15', 'Laptop', 189000], ['Legion 5i Gen 10', 'Laptop', 279000], ['Legion Pro 5 Gen 10', 'Laptop', 349000]
+  ],
+  HP: [
+    ['Pavilion TP01', 'Desktop', 125000], ['OmniBook 3 14', 'Laptop', 108000], ['OmniBook 5 14', 'Laptop', 139000],
+    ['OmniBook 7 14', 'Laptop', 179000], ['OmniBook X 14', 'Laptop', 219000], ['OmniBook Ultra 14', 'Laptop', 269000],
+    ['EliteBook 840', 'Laptop', 229000], ['EliteBook 860', 'Laptop', 249000], ['ProBook 440', 'Laptop', 159000],
+    ['ProBook 450', 'Laptop', 175000], ['Victus 15', 'Laptop', 169000], ['Victus 16', 'Laptop', 199000],
+    ['OMEN 16', 'Laptop', 299000], ['ZBook Firefly 14', 'Laptop', 319000], ['Chromebook Plus 14', 'Laptop', 99000]
+  ],
+  Apple: [
+    ['MacBook Neo', 'Laptop', 119000], ['MacBook Air 13', 'Laptop', 169000], ['MacBook Air 15', 'Laptop', 209000],
+    ['MacBook Pro 14', 'Laptop', 289000], ['MacBook Pro 16', 'Laptop', 389000], ['iPhone 17', 'Smartphone', 145000],
+    ['iPhone 17 Pro', 'Smartphone', 199000], ['iPhone 17 Pro Max', 'Smartphone', 229000], ['iPhone Air', 'Smartphone', 179000],
+    ['iPad 10th Gen', 'Tablet', 66000], ['iPad Air 11', 'Tablet', 119000], ['iPad Air 13', 'Tablet', 159000],
+    ['iPad Pro 11', 'Tablet', 189000], ['Apple Watch Series 11', 'Smartwatch', 65000], ['AirPods Pro', 'Earbuds', 42000]
+  ],
+  Samsung: [
+    ['Galaxy S24', 'Smartphone', 105000], ['Galaxy S24 FE', 'Smartphone', 78000], ['Galaxy S25', 'Smartphone', 119000],
+    ['Galaxy S25+', 'Smartphone', 149000], ['Galaxy S25 Ultra', 'Smartphone', 189000], ['Galaxy A56 5G', 'Smartphone', 62000],
+    ['Galaxy A36 5G', 'Smartphone', 47000], ['Galaxy Z Flip7', 'Smartphone', 169000], ['Galaxy Z Fold7', 'Smartphone', 289000],
+    ['Galaxy Tab S10 FE', 'Tablet', 89000], ['Galaxy Tab S10 Ultra', 'Tablet', 179000], ['Galaxy Watch8', 'Smartwatch', 52000],
+    ['Galaxy Buds3 Pro', 'Earbuds', 32000], ['T7 Shield', 'Storage', 18000], ['WF45T6000AW', 'Appliance', 98000]
+  ],
+  Sony: [
+    ['WH-CH720N', 'Headphones', 18000], ['WH-1000XM5', 'Headphones', 48000], ['WF-1000XM5', 'Earbuds', 39000],
+    ['ULT Wear', 'Headphones', 27000], ['LinkBuds Fit', 'Earbuds', 25000], ['SRS-XB100', 'Speaker', 7500],
+    ['SRS-XG300', 'Speaker', 26000], ['SRS-XV500', 'Speaker', 49000], ['ZV-E10 II', 'Camera', 139000],
+    ['Alpha 6400', 'Camera', 129000], ['Alpha 7 IV', 'Camera', 329000], ['BRAVIA XR 55', 'Television', 179000],
+    ['INZONE H5', 'Headphones', 22000], ['INZONE Buds', 'Earbuds', 29000], ['DualSense Wireless Controller', 'Gaming accessory', 12500]
+  ],
+  Logitech: [
+    ['MK540', 'Keyboard and mouse', 11500], ['MX Keys S', 'Keyboard', 18500], ['MX Master 4', 'Mouse', 19000],
+    ['MX Anywhere 3S', 'Mouse', 12500], ['G Pro X Superlight 2', 'Gaming mouse', 22000], ['G502 X', 'Gaming mouse', 12500],
+    ['G435', 'Gaming headset', 9500], ['G733', 'Gaming headset', 16500], ['Zone Vibe 100', 'Headphones', 14500],
+    ['C920s', 'Webcam', 10500], ['Brio 500', 'Webcam', 16500], ['StreamCam', 'Webcam', 18500],
+    ['K380s', 'Keyboard', 6500], ['Pebble 2 Combo', 'Keyboard and mouse', 7500], ['Lift Vertical', 'Mouse', 10500]
+  ]
+});
+
+const representativePhotoIds = Object.freeze({
+  Acer: 'lap-study-01', ASUS: 'lap-game-03', Lenovo: 'lap-work-02', HP: 'pc-home-04',
+  Apple: 'tab-08', Samsung: 'mob-premium-05', Sony: 'audio-13', Logitech: 'keyboard-14'
+});
+
+const categoryForModelType = Object.freeze({
+  Laptop: 'Laptops & PCs', Desktop: 'Desktop PCs', Smartphone: 'Mobile & Tablets', Tablet: 'Apple',
+  Smartwatch: 'Mobile & Tablets', Earbuds: 'Accessories', Headphones: 'Accessories', Speaker: 'Accessories',
+  Camera: 'Accessories', Television: 'Displays', Storage: 'Storage', Appliance: 'Home Appliances',
+  'Gaming accessory': 'Accessories', Keyboard: 'Accessories', Mouse: 'Accessories',
+  'Keyboard and mouse': 'Accessories', 'Gaming mouse': 'Accessories', 'Gaming headset': 'Accessories', Webcam: 'Accessories'
+});
+
+const existingSeedModels = new Set(seedProducts.map(product => `${product.brand}|${product.model}`.toLowerCase()));
+Object.entries(demoBrandModels).forEach(([brand, models], brandIndex) => {
+  const representativePhoto = seedProductImages[representativePhotoIds[brand]];
+  models.forEach(([model, type, price], modelIndex) => {
+    if (existingSeedModels.has(`${brand}|${model}`.toLowerCase())) return;
+    const slug = `${brand}-${model}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const stock = (modelIndex * 7 + brandIndex * 3) % 16;
+    seedProducts.push({
+      id: `demo-${slug}`, name: `${model} ${type}`, brand, model,
+      category: brand === 'Apple' ? 'Apple' : categoryForModelType[type],
+      price, previousPrice: null, stock, threshold: 3, featured: modelIndex % 4 === 0,
+      published: true, image: representativePhoto, representativeImage: true,
+      description: `Demo model listing for ${brand} ${model}. Exact configuration, local price, and availability are not verified; contact World Electronics to confirm before purchase.`,
+      specs: { 'Product type': type, Model: model, Configuration: 'Confirm exact SKU with store' },
+      keywords: [brand.toLowerCase(), model.toLowerCase(), type.toLowerCase()],
+      warranty: 'Ask store to confirm', icon: '✦'
+    });
+  });
 });
 
 const withSeedProductImages = list => list.map(product => {
@@ -74,10 +184,10 @@ const withSeedProductImages = list => list.map(product => {
 });
 
 const seedServices = [
-  { id: 'svc-laptop', name: 'Laptop Diagnostics', type: 'Computer repair', price: 49, description: 'A careful assessment of laptop hardware, software, and performance concerns.', published: true },
-  { id: 'svc-phone', name: 'Smartphone Repair Consultation', type: 'Mobile support', price: 25, description: 'Talk through phone concerns and possible next steps with a technician.', published: true },
-  { id: 'svc-appliance', name: 'Appliance Diagnostics', type: 'Home appliance', price: 59, description: 'Initial troubleshooting for common household electronics and appliance issues.', published: true },
-  { id: 'svc-general', name: 'General Electronics Support', type: 'Consultation', price: 35, description: 'Friendly help with setup, connectivity, and everyday technology questions.', published: true }
+  { id: 'svc-laptop', name: 'Laptop Diagnostics', type: 'Computer repair', price: 0, description: 'Ask the store about laptop hardware, software, and performance diagnostics. Scope and any service fee are confirmed before work begins.', published: true },
+  { id: 'svc-phone', name: 'Device Repair Consultation', type: 'Device support', price: 0, description: 'Discuss device concerns and possible next steps with the store. Repair availability and estimates are confirmed case by case.', published: true },
+  { id: 'svc-appliance', name: 'Electronics Troubleshooting', type: 'Electronics support', price: 0, description: 'Contact the store to ask about troubleshooting for electronics and equipment. Availability is not guaranteed.', published: true },
+  { id: 'svc-general', name: 'General Technology Support', type: 'Consultation', price: 0, description: 'Get in touch about setup, connectivity, or everyday technology questions.', published: true }
 ];
 
 const defaults = Object.freeze({
@@ -184,8 +294,19 @@ const Security = {
    */
   safeURL(v) {
     if (!v || typeof v !== 'string') return '';
+    const raw = v.trim();
+    if (raw.startsWith('/') && !raw.startsWith('//') && !raw.includes('\\') && !/[\u0000-\u001f]/.test(raw)) {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      if (!origin) return '';
+      try {
+        const local = new URL(raw, origin);
+        if (local.origin === origin) return local.href;
+      } catch {
+        return '';
+      }
+    }
     try {
-      const u = new URL(v.trim());
+      const u = new URL(raw);
       if ((u.protocol === 'https:' || u.protocol === 'http:') && this.isSSRFSafeURL(u.href)) {
         return u.href;
       }
@@ -786,7 +907,7 @@ const Store = {
     inquiries: [],
     settings: { ...defaults },
     activity: [],
-    preferences: { wishlist: [], compare: [] }
+    preferences: { wishlist: [], compare: [], cart: [] }
   },
   revision: 0,
   seen: new Set(),
@@ -812,6 +933,7 @@ const Store = {
           const parsed = JSON.parse(raw);
           if (name === 'settings' && parsed && typeof parsed === 'object') {
             const safeParsed = Security.deepCloneSafe(parsed);
+            if (safeParsed.storeName === 'World Electronics') safeParsed.storeName = defaults.storeName;
             // Move the original demo defaults to the requested Nepalese rupee display.
             if (safeParsed.currency === 'USD' && (!safeParsed.locale || safeParsed.locale === 'en-US')) {
               safeParsed.currency = 'NPR';
@@ -825,6 +947,17 @@ const Store = {
               ...defaults,
               ...safeParsed,
               hours: { ...defaults.hours, ...(safeParsed.hours || {}) }
+            };
+          } else if (name === 'preferences' && parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            const validIds = new Set(this.data.products.map(product => product.id));
+            const cleanIds = value => Array.isArray(value) ? [...new Set(value.filter(id => typeof id === 'string' && validIds.has(id)))].slice(0, 50) : [];
+            const cart = Array.isArray(parsed.cart) ? parsed.cart
+              .filter(item => item && typeof item.id === 'string' && validIds.has(item.id) && Number.isInteger(item.quantity) && item.quantity > 0 && item.quantity <= 99)
+              .map(item => ({ id: item.id, quantity: item.quantity })).slice(0, 50) : [];
+            this.data.preferences = {
+              wishlist: cleanIds(parsed.wishlist),
+              compare: cleanIds(parsed.compare).slice(0, 4),
+              cart
             };
           } else if (Array.isArray(parsed)) {
             const cleaned = Security.deepCloneSafe(parsed);
@@ -855,6 +988,12 @@ const Store = {
     }
     // Existing browser catalogs keep their edits while gaining the new seed photography.
     this.data.products = withSeedProductImages(this.data.products);
+    const existingIds = new Set(this.data.products.map(product => product.id));
+    const addedSeedProducts = seedProducts.filter(product => !existingIds.has(product.id));
+    if (addedSeedProducts.length) {
+      this.data.products.push(...withSeedProductImages(structuredClone(addedSeedProducts)));
+      this.save('products', false);
+    }
   },
 
   save(name, broadcast = true) {
@@ -976,12 +1115,12 @@ const Store = {
       return;
     }
     this.data = {
-      products: structuredClone(seedProducts),
+      products: withSeedProductImages(structuredClone(seedProducts)),
       services: structuredClone(seedServices),
       inquiries: [],
       settings: { ...defaults, hours: structuredClone(defaults.hours) },
       activity: [],
-      preferences: { wishlist: [], compare: [] }
+      preferences: { wishlist: [], compare: [], cart: [] }
     };
     this.log('Catalog and demo data reset to verified baseline');
     this.saveAll();
@@ -1173,7 +1312,7 @@ const TechMatch = {
     };
     const validUses = Object.keys(map);
     const safeUse = validUses.includes(use) ? use : 'study';
-    const safeBudget = Number.isFinite(budget) && budget > 0 ? budget : 800;
+    const safeBudget = Number.isFinite(budget) && budget > 0 ? budget : 100000;
     const safePriority = ['value', 'performance', 'portable', 'reliable'].includes(priority) ? priority : 'value';
 
     let pool = products().filter(p => map[safeUse].includes(p.category) && p.price <= safeBudget && p.stock > 0);
@@ -1187,8 +1326,7 @@ const TechMatch = {
     pool.sort((a, b) => {
       const score = p => (p.featured ? 2 : 0) +
                          (stockState(p) === 'in' ? 1 : 0) +
-                         (words.some(w => `${p.name} ${p.description} ${(p.keywords || []).join(' ')}`.toLowerCase().includes(w)) ? 2 : 0) +
-                         (p.rating || 0) / 5;
+                         (words.some(w => `${p.name} ${p.description} ${(p.keywords || []).join(' ')}`.toLowerCase().includes(w)) ? 2 : 0);
       return score(b) - score(a);
     });
 
@@ -1221,10 +1359,11 @@ const TechCare = {
 
 /* 8. Storefront Rendering Engine & UI Helpers */
 const UI = {
-  filters: { q: '', category: '', availability: '', min: '', max: '', featured: false, sort: 'featured' },
+  filters: { q: '', category: '', brand: '', availability: '', min: '', max: '', featured: false, sort: 'featured' },
 
   renderAll() {
     this.renderProducts();
+    this.renderOffers();
     this.renderServices();
     this.renderCounts();
     this.renderAdmin();
@@ -1266,6 +1405,7 @@ const UI = {
       list = list.filter(p => `${p.name} ${p.brand} ${p.model} ${p.description} ${JSON.stringify(p.specs || {})} ${(p.keywords || []).join(' ')}`.toLowerCase().includes(q));
     }
     if (f.category) list = list.filter(p => p.category === f.category);
+    if (f.brand) list = list.filter(p => p.brand.toLowerCase() === f.brand.toLowerCase());
     if (f.availability) list = list.filter(p => stockState(p) === f.availability);
     if (f.featured) list = list.filter(p => p.featured);
     if (f.min !== '') list = list.filter(p => p.price >= +f.min);
@@ -1273,7 +1413,10 @@ const UI = {
 
     if (f.sort === 'price-up') list.sort((a, b) => a.price - b.price);
     if (f.sort === 'price-down') list.sort((a, b) => b.price - a.price);
-    if (f.sort === 'rating') list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    if (f.sort === 'discount') list.sort((a, b) => {
+      const discount = p => p.previousPrice > p.price ? (p.previousPrice - p.price) / p.previousPrice : 0;
+      return discount(b) - discount(a);
+    });
     if (f.sort === 'stock') list.sort((a, b) => b.stock - a.stock);
     if (f.sort === 'featured') list.sort((a, b) => (+b.featured) - (+a.featured));
 
@@ -1300,11 +1443,24 @@ const UI = {
     this.renderChips();
   },
 
+  renderOffers() {
+    const grid = document.querySelector('#saleGrid');
+    if (!grid) return;
+    const offers = products().filter(product => product.previousPrice > product.price);
+    grid.replaceChildren();
+    if (!offers.length) {
+      grid.innerHTML = '<div class="empty">No sample sale prices are currently listed.</div>';
+      return;
+    }
+    offers.forEach(product => grid.append(this.productCard(product)));
+  },
+
   productCard(p) {
     const el = document.createElement('article');
     el.className = 'card product-card';
     const img = safeURL(p.image);
     const safeName = escapeHTML(p.name);
+    const imageAlt = p.representativeImage ? `Representative ${escapeHTML(p.brand)} product photo for ${safeName}` : safeName;
     const safeBrand = escapeHTML(p.brand);
     const safeModel = escapeHTML(p.model);
     const safeCategory = escapeHTML(p.category);
@@ -1315,9 +1471,10 @@ const UI = {
 
     el.innerHTML = `
       <div class="product-art">
-        ${img ? `<img src="${escapeHTML(img)}" alt="${safeName}" loading="lazy" decoding="async">` : `<span class="emoji-art" aria-hidden="true">${safeIcon}</span>`}
+        ${img ? `<img src="${escapeHTML(img)}" alt="${imageAlt}" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : `<span class="emoji-art" aria-hidden="true">${safeIcon}</span>`}
         <span class="badge">${safeCategory}</span>
-        ${p.featured ? '<span class="badge featured">★ Featured</span>' : ''}
+        ${p.representativeImage ? '<span class="image-note">Representative photo</span>' : ''}
+        ${p.previousPrice > p.price ? '<span class="badge sale">Sale</span>' : p.featured ? '<span class="badge featured">Featured</span>' : ''}
       </div>
       <div class="card-body">
         <div class="meta">${safeBrand} · ${safeModel}</div>
@@ -1325,15 +1482,14 @@ const UI = {
         <div class="spec">${escapeHTML(specsSummary)}</div>
         <div class="price-row">
           <span class="price">${escapeHTML(money(p.price))}</span>
-          ${p.previousPrice ? `<span class="oldprice">${escapeHTML(money(p.previousPrice))}</span>` : ''}
+          ${p.previousPrice > p.price ? `<span class="oldprice">${escapeHTML(money(p.previousPrice))}</span>` : ''}
         </div>
-        ${p.rating ? `<div class="meta" aria-label="Rated ${escapeHTML(p.rating)} out of 5">★ ${escapeHTML(p.rating)} / 5</div>` : ''}
         <div class="stock ${escapeHTML(stockState(p))}">${escapeHTML(stockText(p))}</div>
         <div class="card-actions">
           <button class="btn outline" data-action="detail" data-id="${safeId}">Details</button>
           <button class="btn outline" data-action="wish" data-id="${safeId}" aria-label="Add ${safeName} to wishlist">♡</button>
           <button class="btn outline" data-action="compare" data-id="${safeId}" aria-label="Compare ${safeName}">⇄</button>
-          ${p.stock > 0 ? `<button class="btn primary" data-action="whatsapp" data-id="${safeId}">Ask on WhatsApp</button>` : `<button class="btn outline" data-action="restock" data-id="${safeId}">Ask about restock</button>`}
+          ${p.stock > 0 ? `<button class="btn primary" data-action="addCart" data-id="${safeId}">Add to cart</button>` : `<button class="btn outline" data-action="restock" data-id="${safeId}">Ask about stock</button>`}
         </div>
       </div>
     `;
@@ -1356,6 +1512,7 @@ const UI = {
     const items = [
       ['Search', f.q, 'q'],
       ['Category', f.category, 'category'],
+      ['Brand', f.brand, 'brand'],
       ['Availability', f.availability, 'availability'],
       ['Min', f.min, 'min'],
       ['Max', f.max, 'max'],
@@ -1368,7 +1525,14 @@ const UI = {
       b.onclick = () => {
         if (key === 'featured') f.featured = false;
         else f[key] = '';
+        if (key === 'q') {
+          const navSearch = document.querySelector('#navSearch');
+          const catalogSearch = document.querySelector('#catalogSearch');
+          if (navSearch) navSearch.value = '';
+          if (catalogSearch) catalogSearch.value = '';
+        }
         this.syncControls();
+        syncCatalogURL();
         this.renderProducts();
       };
       host.append(b);
@@ -1392,7 +1556,7 @@ const UI = {
         <div class="meta">${escapeHTML(s.type)}</div>
         <h3>${escapeHTML(s.name)}</h3>
         <p>${escapeHTML(s.description)}</p>
-        <div class="service-price">Starting at ${escapeHTML(money(s.price))}</div>
+        <div class="service-price">${s.price > 0 ? `Sample estimate: ${escapeHTML(money(s.price))}` : 'Ask for an estimate'}</div>
         <button class="btn outline small" style="margin-top:13px" data-action="serviceInquiry" data-id="${escapeHTML(s.id)}">Ask about service</button>
       `;
       g.append(d);
@@ -1402,20 +1566,35 @@ const UI = {
   renderCounts() {
     const w = Store.data.preferences.wishlist || [];
     const c = Store.data.preferences.compare || [];
+    const cart = Store.data.preferences.cart || [];
     const wishEl = document.querySelector('#wishCount');
     const compEl = document.querySelector('#compareCount');
+    const cartEl = document.querySelector('#cartCount');
     if (wishEl) wishEl.textContent = w.length;
     if (compEl) compEl.textContent = c.length;
+    if (cartEl) cartEl.textContent = cart.reduce((total, item) => total + item.quantity, 0);
+    this.renderBrandFilter();
   },
 
   renderPreferences() {},
 
+  renderBrandFilter() {
+    const select = document.querySelector('#brandFilter');
+    if (!select) return;
+    const brands = [...new Set(products().map(product => product.brand))].sort((a, b) => a.localeCompare(b));
+    const selected = this.filters.brand;
+    select.replaceChildren(new Option('All brands', ''));
+    brands.forEach(brand => select.add(new Option(brand, brand)));
+    select.value = selected;
+  },
+
   syncControls() {
-    for (const id of ['categoryFilter', 'availabilityFilter', 'minPrice', 'maxPrice', 'featuredFilter', 'sortFilter']) {
+    for (const id of ['categoryFilter', 'brandFilter', 'availabilityFilter', 'minPrice', 'maxPrice', 'featuredFilter', 'sortFilter']) {
       const el = document.getElementById(id);
       if (!el) continue;
       const key = {
         categoryFilter: 'category',
+        brandFilter: 'brand',
         availabilityFilter: 'availability',
         minPrice: 'min',
         maxPrice: 'max',
@@ -1471,6 +1650,7 @@ const Customer = {
     const titleEl = document.querySelector('#detailTitle');
     if (titleEl) titleEl.textContent = p.name;
 
+    const image = safeURL(p.image);
     const specs = Object.entries(p.specs || {})
       .map(([k, v]) => `<li><strong>${escapeHTML(k)}:</strong> ${escapeHTML(v)}</li>`)
       .join('');
@@ -1482,23 +1662,112 @@ const Customer = {
     if (contentEl) {
       contentEl.innerHTML = `
         <div class="detail-layout">
-          <div class="detail-art">${escapeHTML(p.icon || '✦')}</div>
+          <div class="detail-art">${image ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(p.name)}" loading="lazy">` : escapeHTML(p.icon || '✦')}</div>
           <div>
             <div class="meta">${escapeHTML(p.brand)} · ${escapeHTML(p.model)} · ${escapeHTML(p.category)}</div>
             <h2>${escapeHTML(p.name)}</h2>
             <p>${escapeHTML(p.description)}</p>
             <div class="price">${escapeHTML(money(p.price))}</div>
+            ${p.previousPrice > p.price ? `<p class="oldprice">Previous sample price: ${escapeHTML(money(p.previousPrice))}</p>` : ''}
             <p class="stock ${escapeHTML(stockState(p))}">${escapeHTML(stockText(p))}</p>
             <p><strong>Warranty:</strong> ${escapeHTML(p.warranty || 'Ask for details')}</p>
             <h3>Specifications</h3>
             <ul>${specs}</ul>
             ${compatible.length ? `<p><strong>Compatible accessories:</strong> ${compatible.map(escapeHTML).join(', ')}</p>` : ''}
-            <div class="banner"><strong>Care tip:</strong> ${escapeHTML(TechCare.guide(p.category).tips[0] || 'Follow manufacturer care guidance.')}</div>
+            <div class="banner"><strong>Sample listing:</strong> Price and availability are illustrative. Confirm all product, warranty, and delivery details with the store before purchase.</div>
+            ${p.stock > 0 ? `<button class="btn primary" data-action="addCart" data-id="${escapeHTML(p.id)}">Add to cart</button>` : '<p class="banner">This sample listing is marked out of stock. No purchase is available.</p>'}
           </div>
         </div>
       `;
     }
     openDialog('detailDialog');
+  },
+
+  addToCart(id) {
+    const product = products().find(item => item.id === id);
+    if (!product || product.stock < 1) {
+      Toast.show('This product is not available in the sample catalog.', 'error');
+      return;
+    }
+    const cart = Store.data.preferences.cart || [];
+    const line = cart.find(item => item.id === id);
+    if (line) {
+      if (line.quantity >= Math.min(product.stock, 99)) {
+        Toast.show('The requested quantity exceeds the listed sample stock.', 'error');
+        return;
+      }
+      line.quantity += 1;
+    } else {
+      if (cart.length >= 50) {
+        Toast.show('Your demo cart has reached its item limit.', 'error');
+        return;
+      }
+      cart.push({ id, quantity: 1 });
+    }
+    Store.data.preferences.cart = cart.slice(0, 50);
+    Store.save('preferences', false);
+    UI.renderCounts();
+    Toast.show('Added to your demo cart.');
+  },
+
+  renderCart() {
+    const host = document.querySelector('#cartContent');
+    if (!host) return;
+    const items = (Store.data.preferences.cart || []).map(line => ({
+      line,
+      product: products().find(item => item.id === line.id)
+    })).filter(entry => entry.product);
+    if (!items.length) {
+      host.innerHTML = '<div class="empty"><h3>Your cart is empty</h3><p>Add in-stock sample products to see them here.</p><a class="btn primary" href="#catalog" data-close="cartDialog">Browse products</a></div>';
+      return;
+    }
+    const subtotal = items.reduce((sum, { line, product }) => sum + product.price * line.quantity, 0);
+    host.innerHTML = `
+      <div class="cart-items">${items.map(({ line, product }) => {
+        const image = safeURL(product.image);
+        return `<article class="cart-item">
+          <div class="cart-thumb">${image ? `<img src="${escapeHTML(image)}" alt="" loading="lazy">` : escapeHTML(product.icon || '▣')}</div>
+          <div class="cart-product"><strong>${escapeHTML(product.name)}</strong><span>${escapeHTML(product.brand)} · ${escapeHTML(money(product.price))} each</span>
+            <div class="cart-controls">
+              <button class="btn small outline" data-cart-action="decrease" data-id="${escapeHTML(product.id)}" aria-label="Decrease ${escapeHTML(product.name)} quantity">−</button>
+              <span aria-label="Quantity">${line.quantity}</span>
+              <button class="btn small outline" data-cart-action="increase" data-id="${escapeHTML(product.id)}" aria-label="Increase ${escapeHTML(product.name)} quantity">+</button>
+              <button class="btn small outline" data-cart-action="remove" data-id="${escapeHTML(product.id)}">Remove</button>
+            </div>
+          </div>
+          <strong class="cart-line-total">${escapeHTML(money(product.price * line.quantity))}</strong>
+        </article>`;
+      }).join('')}</div>
+      <div class="cart-summary"><span>Sample subtotal</span><strong>${escapeHTML(money(subtotal))}</strong></div>
+      <p class="field-hint">Demo prices only. Shipping, stock, and final pricing must be confirmed with the store.</p>
+      <div class="form-actions"><button class="btn outline" data-close="cartDialog">Continue shopping</button><button class="btn primary" data-cart-action="checkout">Continue to checkout</button></div>
+    `;
+  },
+
+  updateCart(id, action) {
+    const cart = Store.data.preferences.cart || [];
+    const line = cart.find(item => item.id === id);
+    const product = products().find(item => item.id === id);
+    if (!line || !product) return;
+    if (action === 'remove' || action === 'decrease' && line.quantity <= 1) {
+      Store.data.preferences.cart = cart.filter(item => item.id !== id);
+    } else if (action === 'increase') {
+      if (line.quantity >= Math.min(product.stock, 99)) {
+        Toast.show('The requested quantity exceeds the listed sample stock.', 'error');
+        return;
+      }
+      line.quantity += 1;
+    } else if (action === 'decrease') {
+      line.quantity -= 1;
+    }
+    Store.save('preferences', false);
+    UI.renderCounts();
+    this.renderCart();
+  },
+
+  openCart() {
+    this.renderCart();
+    openDialog('cartDialog');
   },
 
   toggle(key, id) {
@@ -1559,7 +1828,6 @@ const Customer = {
               ['Category', p => p.category],
               ['Brand / model', p => `${p.brand} ${p.model}`],
               ['Stock', stockText],
-              ['Rating', p => p.rating ? `${p.rating} / 5` : 'Not rated'],
               ['Specifications', p => Object.entries(p.specs || {}).map(([k, v]) => `${k}: ${v}`).join(' · ')]
             ].map(([k, fn]) => `
               <tr>
@@ -1610,8 +1878,7 @@ const Customer = {
     } else if (s.address && typeof s.address === 'string' && s.address.trim().length > 0) {
       url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address.trim())}`;
     } else {
-      Toast.show('Add a valid store address or coordinates in settings first.', 'error');
-      return;
+      url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Birtamode, Jhapa, Nepal')}`;
     }
     window.open(url, '_blank', 'noopener,noreferrer');
   }
@@ -2159,11 +2426,12 @@ async function showAdmin() {
 
 function setFilter(key, value) {
   UI.filters[key] = value;
+  syncCatalogURL();
   UI.renderProducts();
 }
 
 function clearFilters() {
-  UI.filters = { q: '', category: '', availability: '', min: '', max: '', featured: false, sort: 'featured' };
+  UI.filters = { q: '', category: '', brand: '', availability: '', min: '', max: '', featured: false, sort: 'featured' };
   const navS = document.querySelector('#navSearch');
   const catS = document.querySelector('#catalogSearch');
   const pSlider = document.querySelector('#priceSlider');
@@ -2171,7 +2439,36 @@ function clearFilters() {
   if (catS) catS.value = '';
   if (pSlider) pSlider.value = pSlider.max;
   UI.syncControls();
+  syncCatalogURL();
   UI.renderProducts();
+}
+
+function syncCatalogURL() {
+  const params = new URLSearchParams(location.search);
+  for (const key of ['q', 'category', 'brand', 'availability', 'min', 'max', 'featured', 'sort']) params.delete(key);
+  for (const [key, value] of Object.entries(UI.filters)) {
+    if (value !== '' && value !== false && !(key === 'sort' && value === 'featured')) params.set(key, String(value));
+  }
+  const query = params.toString();
+  history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
+}
+
+function loadCatalogURL() {
+  const params = new URLSearchParams(location.search);
+  const allowedAvailability = ['in', 'low', 'out'];
+  const allowedSort = ['featured', 'price-up', 'price-down', 'discount', 'stock'];
+  const category = params.get('category') || '';
+  const brand = params.get('brand') || '';
+  UI.filters = {
+    q: Security.safeText(params.get('q') || '', 100),
+    category: CONFIG.categories.includes(category) ? category : '',
+    brand: products().some(product => product.brand === brand) ? brand : '',
+    availability: allowedAvailability.includes(params.get('availability')) ? params.get('availability') : '',
+    min: /^\d{1,7}$/.test(params.get('min') || '') ? params.get('min') : '',
+    max: /^\d{1,7}$/.test(params.get('max') || '') ? params.get('max') : '',
+    featured: params.get('featured') === 'true',
+    sort: allowedSort.includes(params.get('sort')) ? params.get('sort') : 'featured'
+  };
 }
 
 function requestAdmin() {
@@ -2303,6 +2600,7 @@ document.querySelector('#navSearch').oninput = e => {
   const catSearch = document.querySelector('#catalogSearch');
   if (catSearch) catSearch.value = e.target.value;
   document.querySelector('#catalog')?.scrollIntoView({ behavior: 'smooth' });
+  syncCatalogURL();
   UI.renderProducts();
 };
 
@@ -2310,10 +2608,18 @@ document.querySelector('#catalogSearch').oninput = e => {
   UI.filters.q = e.target.value;
   const navSearch = document.querySelector('#navSearch');
   if (navSearch) navSearch.value = e.target.value;
+  syncCatalogURL();
   UI.renderProducts();
 };
 
 document.querySelector('#categoryFilter').onchange = e => setFilter('category', e.target.value);
+document.querySelector('#brandFilter').onchange = e => setFilter('brand', e.target.value);
+document.querySelector('.category-grid').addEventListener('click', e => {
+  const card = e.target.closest('[data-category]');
+  if (!card || !CONFIG.categories.includes(card.dataset.category)) return;
+  setFilter('category', card.dataset.category);
+  UI.syncControls();
+});
 document.querySelector('#availabilityFilter').onchange = e => setFilter('availability', e.target.value);
 document.querySelector('#minPrice').oninput = e => setFilter('min', e.target.value);
 document.querySelector('#maxPrice').oninput = e => setFilter('max', e.target.value);
@@ -2335,9 +2641,50 @@ document.querySelector('#productGrid').addEventListener('click', e => {
   if (action === 'detail') Customer.open(id);
   if (action === 'wish') Customer.toggle('wishlist', id);
   if (action === 'compare') Customer.toggle('compare', id);
+  if (action === 'addCart') Customer.addToCart(id);
   if (action === 'whatsapp') Customer.whatsapp(id);
   if (action === 'restock') Customer.inquiry('Restock request', id);
   if (action === 'clear') clearFilters();
+});
+document.querySelector('#saleGrid').addEventListener('click', e => {
+  const button = e.target.closest('[data-action]');
+  if (!button) return;
+  const { action, id } = button.dataset;
+  if (action === 'detail') Customer.open(id);
+  if (action === 'wish') Customer.toggle('wishlist', id);
+  if (action === 'compare') Customer.toggle('compare', id);
+  if (action === 'addCart') Customer.addToCart(id);
+  if (action === 'restock') Customer.inquiry('Restock request', id);
+});
+
+document.querySelector('#brands').addEventListener('click', e => {
+  const button = e.target.closest('[data-brand]');
+  if (!button) return;
+  clearFilters();
+  setFilter('brand', button.dataset.brand);
+  UI.syncControls();
+  document.querySelector('#catalog').scrollIntoView({ behavior: 'smooth' });
+});
+
+document.querySelector('#cartNav').addEventListener('click', () => Customer.openCart());
+document.querySelector('#pcQuoteBtn').addEventListener('click', () => {
+  const use = document.querySelector('#pcUse')?.value || 'home computing';
+  Customer.inquiry('Product question');
+  const message = document.querySelector('#inqMessage');
+  if (message) message.value = `I would like advice about a custom PC for ${use.toLowerCase()}. Please contact me to discuss suitable components.`;
+});
+document.querySelector('#cartContent').addEventListener('click', e => {
+  const button = e.target.closest('[data-cart-action]');
+  if (!button) return;
+  if (button.dataset.cartAction === 'checkout') {
+    openDialog('checkoutDialog');
+    return;
+  }
+  Customer.updateCart(button.dataset.id, button.dataset.cartAction);
+});
+document.querySelector('#detailDialog').addEventListener('click', e => {
+  const button = e.target.closest('[data-action="addCart"]');
+  if (button) Customer.addToCart(button.dataset.id);
 });
 
 // Mouse-only 3D product preview; touch and reduced-motion users get a static card.
@@ -2847,6 +3194,13 @@ document.querySelector('#compareContent').onclick = e => {
 
 const menuToggle = document.querySelector('#menuToggle');
 const mainLinks = document.querySelector('#mainLinks');
+const mobileSearchToggle = document.querySelector('#mobileSearchToggle');
+mobileSearchToggle?.addEventListener('click', () => {
+  const open = document.querySelector('#nav')?.classList.toggle('search-open');
+  mobileSearchToggle.setAttribute('aria-expanded', String(!!open));
+  mobileSearchToggle.setAttribute('aria-label', open ? 'Hide product search' : 'Show product search');
+  if (open) document.querySelector('#navSearch')?.focus();
+});
 menuToggle?.addEventListener('click', () => {
   const open = menuToggle.getAttribute('aria-expanded') !== 'true';
   menuToggle.setAttribute('aria-expanded', String(open));
@@ -2910,7 +3264,7 @@ fetch('/api/site-config').then(response => response.ok ? response.json() : null)
     const og = document.querySelector('meta[property="og:image"]');
     if (og) og.content = `${origin}/og-image.svg`;
     const schema = document.querySelector('#organizationSchema');
-    if (schema) schema.textContent = JSON.stringify({ '@context':'https://schema.org', '@type':'Organization', name:'World Electronics', url:`${origin}/`, logo:`${origin}/favicon.svg`, description:'Technology products and repair support.' });
+    if (schema)     schema.textContent = JSON.stringify({ '@context':'https://schema.org', '@type':'Organization', name:'World Electronics', address:{ '@type':'PostalAddress', addressLocality:'Birtamode', addressRegion:'Jhapa', addressCountry:'NP' }, url:`${origin}/`, logo:`${origin}/favicon.svg`, description:'Computers, electronics, and repair support in Birtamode, Nepal.' });
   }
   if (consent === 'analytics') loadAnalytics();
 }).catch(() => {});
@@ -2942,8 +3296,13 @@ setInterval(() => UI.updateHours(), 30000);
 /* 12. Application Initialization Bootstrapper */
 Store.load();
 SyncEngine.init();
+loadCatalogURL();
 UI.renderAll();
 UI.syncControls();
+const initialSearch = document.querySelector('#navSearch');
+const initialCatalogSearch = document.querySelector('#catalogSearch');
+if (initialSearch) initialSearch.value = UI.filters.q;
+if (initialCatalogSearch) initialCatalogSearch.value = UI.filters.q;
 }
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {

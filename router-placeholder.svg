@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title">
+  <title id="title">Wireless router illustration placeholder</title>
+  <rect width="640" height="480" rx="28" fill="#f1f5f9"/>
+  <ellipse cx="320" cy="382" rx="210" ry="24" fill="#dbe3ed"/>
+  <path d="M224 123 194 280M416 123l30 157" stroke="#30445c" stroke-width="14" stroke-linecap="round"/>
+  <path d="M155 260c0-22 18-40 40-40h250c22 0 40 18 40 40v78H155z" fill="#26384f"/>
+  <path d="M184 280h272v53H184z" fill="#38536f"/>
+  <circle cx="233" cy="307" r="8" fill="#40c98b"/>
+  <circle cx="266" cy="307" r="8" fill="#40c98b"/>
+  <circle cx="299" cy="307" r="8" fill="#40c98b"/>
+  <path d="M265 162a78 78 0 0 1 110 0M285 184a49 49 0 0 1 70 0M307 205a18 18 0 0 1 26 0" fill="none" stroke="#155eef" stroke-width="9" stroke-linecap="round"/>
+</svg>

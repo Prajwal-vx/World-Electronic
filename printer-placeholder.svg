@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title">
+  <title id="title">Printer illustration placeholder</title>
+  <rect width="640" height="480" rx="28" fill="#f1f5f9"/>
+  <ellipse cx="320" cy="394" rx="205" ry="28" fill="#dbe3ed"/>
+  <path d="M205 82h230v150H205z" fill="#fff" stroke="#9aa9ba" stroke-width="8"/>
+  <path d="M230 108h180v94H230z" fill="#e7eef7"/>
+  <path d="M171 201h298c26 0 47 21 47 47v119H124V248c0-26 21-47 47-47z" fill="#30445c"/>
+  <path d="M185 235h270c12 0 22 10 22 22v76H163v-76c0-12 10-22 22-22z" fill="#f8fafc"/>
+  <path d="M224 277h190v112H224z" fill="#fff" stroke="#bdc8d5" stroke-width="6"/>
+  <path d="M256 306h127M256 329h127M256 352h93" stroke="#a8b5c5" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="444" cy="278" r="9" fill="#40a5ff"/>
+  <path d="M280 70h80" stroke="#155eef" stroke-width="8" stroke-linecap="round"/>
+</svg>
