@@ -439,7 +439,7 @@ async function runTests() {
         req.headers = Object.fromEntries(
           Object.entries(options.headers || {}).map(([k, v]) => [k.toLowerCase(), String(v)])
         );
-        req.socket = { remoteAddress: '127.0.0.1' };
+        req.socket = { remoteAddress: options.remoteAddress || '127.0.0.1' };
         req.resume = () => {};
 
         let statusCode = 200;
@@ -541,6 +541,88 @@ async function runTests() {
       body: { name: 'Attacker', contact: 'test@evil.com', message: 'Spam' }
     });
     assert.equal(untrustedRes.status, 403, 'Untrusted origin mutation must return 403 Forbidden');
+
+    const hostMatchedAttackerOrigin = await dispatch({
+      url: '/api/auth/session',
+      headers: { origin: 'https://attacker.example', host: 'attacker.example' }
+    });
+    assert.equal(hostMatchedAttackerOrigin.headers.get('access-control-allow-origin'), undefined,
+      'An unconfigured Origin must not become trusted just because it matches the request Host');
+
+    const rebindingInquiry = await dispatch({
+      method: 'POST',
+      url: '/api/inquiries',
+      headers: {
+        origin: 'https://attacker.example', host: 'attacker.example',
+        'content-type': 'application/json'
+      },
+      body: { name: 'Attacker', contact: 'attacker@example.com', type: 'General support', message: 'Cross-origin submission' }
+    });
+    assert.equal(rebindingInquiry.status, 403, 'Unconfigured hosts must not submit public inquiries through Origin/Host matching');
+
+    const anonymousInboxRead = await dispatch({ url: '/api/inquiries' });
+    assert.equal(anonymousInboxRead.status, 403, 'Anonymous callers must not read customer inquiries');
+
+    const validInquiry = await dispatch({
+      method: 'POST', url: '/api/inquiries',
+      headers: { origin: 'http://localhost:3000', 'content-type': 'application/json' },
+      body: { name: 'Test Customer', contact: 'test@example.com', type: 'General support', message: 'Valid support request' }
+    });
+    assert.equal(validInquiry.status, 201, 'A valid inquiry from an explicitly allowed origin should succeed');
+    assert.equal(validInquiry.headers.get('cache-control'), 'no-store', 'Inquiry responses containing customer data must not be cached');
+    serverSecurity.db.inquiries.length = 0;
+
+    const oversizedLogin = await dispatch({
+      method: 'POST', url: '/api/auth/login',
+      headers: { origin: 'http://localhost:3000', 'content-type': 'application/json', 'content-length': '1048577' },
+      body: { pin: 'not-a-real-password' }
+    });
+    assert.equal(oversizedLogin.status, 413, 'JSON request bodies above the server limit must be rejected');
+
+    // A caller cannot choose a new rate-limit identity by sending X-Forwarded-For.
+    serverSecurity.db.rateLimits.clear();
+    const untrustedPeer = ['192.0.2.241', '198.51.100.241', '203.0.113.241']
+      .find(ip => !serverSecurity.SERVER_CONFIG.trustedProxyIps.has(ip));
+    assert.ok(untrustedPeer, 'Test requires an untrusted proxy address');
+    for (let i = 0; i < 5; i++) {
+      const attempt = await dispatch({
+        method: 'POST', url: '/api/auth/login', remoteAddress: untrustedPeer,
+        headers: { origin: 'http://localhost:3000', 'content-type': 'application/json', 'x-forwarded-for': `198.51.100.${i + 1}` },
+        body: { pin: 'not-a-real-password' }
+      });
+      assert.notEqual(attempt.status, 429, `Attempt ${i + 1} should remain under the IP rate limit`);
+    }
+    const spoofedRateLimitAttempt = await dispatch({
+      method: 'POST', url: '/api/auth/login', remoteAddress: untrustedPeer,
+      headers: { origin: 'http://localhost:3000', 'content-type': 'application/json', 'x-forwarded-for': '198.51.100.250' },
+      body: { pin: 'not-a-real-password' }
+    });
+    assert.equal(spoofedRateLimitAttempt.status, 429, 'Changing X-Forwarded-For must not bypass login rate limiting');
+
+    // When the immediate peer is explicitly trusted, select the nearest
+    // untrusted hop in the forwarded chain, not attacker-supplied entries.
+    const trustedProxyIp = '203.0.113.240';
+    const actualClientIp = ['192.0.2.240', '198.51.100.240', '203.0.113.239']
+      .find(ip => !serverSecurity.SERVER_CONFIG.trustedProxyIps.has(ip));
+    assert.ok(actualClientIp, 'Test requires an untrusted client address');
+    const previouslyTrusted = serverSecurity.SERVER_CONFIG.trustedProxyIps.has(trustedProxyIp);
+    serverSecurity.SERVER_CONFIG.trustedProxyIps.add(trustedProxyIp);
+    serverSecurity.db.rateLimits.clear();
+    for (let i = 0; i < 5; i++) {
+      const attempt = await dispatch({
+        method: 'POST', url: '/api/auth/login', remoteAddress: trustedProxyIp,
+        headers: { origin: 'http://localhost:3000', 'content-type': 'application/json', 'x-forwarded-for': `198.51.100.${i + 1}, ${actualClientIp}` },
+        body: { pin: 'not-a-real-password' }
+      });
+      assert.notEqual(attempt.status, 429, `Trusted-proxy attempt ${i + 1} should remain under the IP rate limit`);
+    }
+    const trustedProxyRateLimitAttempt = await dispatch({
+      method: 'POST', url: '/api/auth/login', remoteAddress: trustedProxyIp,
+      headers: { origin: 'http://localhost:3000', 'content-type': 'application/json', 'x-forwarded-for': `198.51.100.250, ${actualClientIp}` },
+      body: { pin: 'not-a-real-password' }
+    });
+    assert.equal(trustedProxyRateLimitAttempt.status, 429, 'Trusted proxy chains must still rate-limit by the client address');
+    if (!previouslyTrusted) serverSecurity.SERVER_CONFIG.trustedProxyIps.delete(trustedProxyIp);
   });
 
   console.log(`\n--- TEST SUITE SUMMARY: ${passed} PASSED, ${failed} FAILED ---`);

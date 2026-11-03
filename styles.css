@@ -396,6 +396,11 @@ a {
   background-color: var(--brand-primary-tint);
 }
 
+.links a[aria-current="location"] {
+  color: var(--brand-primary);
+  background: var(--brand-primary-tint);
+}
+
 .spacer {
   flex: 1;
 }
@@ -943,6 +948,16 @@ section {
   object-fit: contain;
   padding: 20px;
   transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.category-art-fallback {
+  position: absolute;
+  inset: 0 0 40px;
+  display: grid;
+  place-items: center;
+  color: var(--brand-primary);
+  font-size: 3.5rem;
+  background: radial-gradient(ellipse at center, var(--brand-primary-tint), var(--bg-surface) 72%);
 }
 
 .category-card:hover img {
@@ -2168,6 +2183,11 @@ dialog::backdrop {
   backdrop-filter: blur(4px);
 }
 
+/* Preserve the native hidden state; this overlay must appear only during a request. */
+.loading-indicator[hidden] {
+  display: none;
+}
+
 .loading-indicator span {
   width: 12px;
   height: 12px;
@@ -2668,6 +2688,44 @@ dialog::backdrop {
   }
   .live-dot {
     animation: none !important;
+  }
+}
+
+/* Keep the full desktop navigation from crowding medium-width screens. */
+@media (max-width: 1100px) {
+  .navinner { height: 64px; gap: 8px; }
+  .brand > span:last-child { display: none; }
+  .links { display: none; }
+  .links.open {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    padding: 12px max(20px, calc((100% - 1220px) / 2));
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-default);
+    box-shadow: var(--shadow-lg);
+    z-index: 50;
+  }
+  .links.open a { padding: 12px; }
+  .hamb, .mobile-search-toggle { display: inline-flex; }
+  .searchnav { display: none; }
+  .nav.search-open .searchnav {
+    display: block;
+    position: absolute;
+    z-index: 30;
+    top: 64px;
+    left: 12px;
+    right: 12px;
+    max-width: none;
+    padding: 10px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
   }
 }
 

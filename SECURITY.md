@@ -3,7 +3,7 @@
 ## Implemented in this demo
 
 - Admin login is verified by the server using a configured scrypt hash. There is no built-in password or PIN.
-- Admin sessions use random `Secure`, `HttpOnly`, `SameSite=Strict` cookies. CSRF tokens are kept in server memory and checked on authenticated logout. Mutating browser API requests also require an allowed origin.
+- Admin sessions use random `Secure`, `HttpOnly`, `SameSite=Strict` cookies. CSRF tokens are kept in server memory and checked on authenticated mutations. Mutating browser API requests also require an explicitly configured origin.
 - TOTP verification is required with a server-only secret. Login is rate-limited, JSON bodies are size-limited, and webhook handling is disabled until a signing secret is configured.
 - Inquiry reads require an authenticated admin session. Public product reads expose only records explicitly marked published.
 - Imported JSON is size-limited, parsed, schema-checked, and validated. Existing browser-stored auth hashes, PINs, and tokens are purged.
@@ -14,7 +14,8 @@
 
 1. Run `node scripts/generate-admin-credentials.mjs` in an interactive terminal. It prints a scrypt password hash and a TOTP secret; save both in the deployment secret manager, not in source control.
 2. Set `ADMIN_PASSWORD_HASH`, `ADMIN_TOTP_SECRET`, `ALLOWED_ORIGINS`, and `PUBLIC_SITE_URL`. Set `WEBHOOK_SECRET` only when a webhook provider is configured.
-3. Serve the site over HTTPS. The admin cookie is always marked `Secure`.
+3. If a reverse proxy supplies `X-Forwarded-For`, set `TRUSTED_PROXY_IPS` to the exact IP addresses of those proxies. Forwarded client IPs are ignored for all other peers. Configure the proxy to replace or append this header safely.
+4. Serve the site over HTTPS. The admin cookie is always marked `Secure`.
 
 ## Scope limits
 

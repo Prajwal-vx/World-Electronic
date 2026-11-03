@@ -17,6 +17,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import net from 'node:net';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,16 +33,6 @@ function parseAllowedOrigins(value) {
   });
 }
 
-function isSameOrigin(reqOrigin, reqHost) {
-  if (!reqOrigin || !reqHost) return false;
-  try {
-    const parsed = new URL(reqOrigin);
-    return ['http:', 'https:'].includes(parsed.protocol) && parsed.host === reqHost;
-  } catch {
-    return false;
-  }
-}
-
 function getRequestOrigin(req) {
   if (req.headers.origin) return req.headers.origin;
   if (req.headers.referer) {
@@ -53,17 +44,29 @@ function getRequestOrigin(req) {
   return '';
 }
 
+function normalizeIpAddress(value) {
+  let address = String(value || '').trim().toLowerCase();
+  if (address.startsWith('::ffff:') && net.isIP(address.slice(7)) === 4) address = address.slice(7);
+  return net.isIP(address) ? address : '';
+}
+
+const trustedProxyIps = new Set(String(process.env.TRUSTED_PROXY_IPS || '').split(',').map(normalizeIpAddress).filter(Boolean));
+
 function getClientIp(req) {
-  if (process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1') {
-    const forwarded = req.headers['x-forwarded-for'];
-    if (typeof forwarded === 'string') {
-      const firstIp = forwarded.split(',')[0].trim();
-      if (/^[a-fA-F0-9:.]+(\/\d+)?$/.test(firstIp)) {
-        return firstIp;
-      }
-    }
+  const remoteAddress = normalizeIpAddress(req.socket.remoteAddress) || '127.0.0.1';
+  if (!trustedProxyIps.has(remoteAddress)) return remoteAddress;
+
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded !== 'string') return remoteAddress;
+  const chain = forwarded.split(',').map(normalizeIpAddress);
+  if (!chain.length || chain.some(address => !address)) return remoteAddress;
+
+  // Walk from the trusted socket peer toward the original client. Only skip
+  // addresses explicitly configured as proxies; never trust arbitrary XFF input.
+  for (let i = chain.length - 1; i >= 0; i--) {
+    if (!trustedProxyIps.has(chain[i])) return chain[i];
   }
-  return req.socket.remoteAddress || '127.0.0.1';
+  return chain[0] || remoteAddress;
 }
 
 const PUBLIC_ROOT_FILES = new Set([
@@ -102,6 +105,7 @@ const SERVER_CONFIG = {
   totpSecret: process.env.ADMIN_TOTP_SECRET || '',
   webhookSecret: process.env.WEBHOOK_SECRET || '',
   allowedOrigins: parseAllowedOrigins(process.env.ALLOWED_ORIGINS || 'http://localhost:3000'),
+  trustedProxyIps,
   sessionCookieName: '__Host-we_session',
   sessionDurationMs: 15 * 60 * 1000,
   publicSiteUrl: process.env.PUBLIC_SITE_URL || '',
@@ -297,7 +301,7 @@ const server = http.createServer(async (req, res) => {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
     // 2. Strict CORS Configuration
-    const trustedOrigin = isSameOrigin(origin, req.headers.host) || SERVER_CONFIG.allowedOrigins.includes(origin) || origin === configuredPublicOrigin();
+    const trustedOrigin = SERVER_CONFIG.allowedOrigins.includes(origin) || origin === configuredPublicOrigin();
     if (origin && trustedOrigin) {
       res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Origin', origin);
@@ -402,7 +406,7 @@ const server = http.createServer(async (req, res) => {
     const checkMutationOrigin = () => {
       const candidateOrigin = getRequestOrigin(req);
       if (candidateOrigin) {
-        const trusted = isSameOrigin(candidateOrigin, req.headers.host) || SERVER_CONFIG.allowedOrigins.includes(candidateOrigin) || candidateOrigin === configuredPublicOrigin();
+        const trusted = SERVER_CONFIG.allowedOrigins.includes(candidateOrigin) || candidateOrigin === configuredPublicOrigin();
         if (trusted) return true;
       } else {
         if (process.env.NODE_ENV === 'test') return true;
@@ -559,7 +563,7 @@ const server = http.createServer(async (req, res) => {
           db.inquiries.unshift(inquiry);
           if (db.inquiries.length > 5000) db.inquiries.length = 5000;
           safeLog('New inquiry received successfully');
-          res.writeHead(201, { 'Content-Type': 'application/json' });
+          res.writeHead(201, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
           res.end(JSON.stringify({ success: true, inquiry }));
         } catch {
           if (!res.headersSent) {

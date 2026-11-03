@@ -1614,6 +1614,13 @@ const UI = {
       if (el.type === 'checkbox') el.checked = !!this.filters[key];
       else el.value = this.filters[key] || '';
     }
+    const slider = document.querySelector('#priceSlider');
+    const sliderLabel = document.querySelector('#sliderVal');
+    if (slider) {
+      const selectedMax = this.filters.max === '' ? Number(slider.max) : Number(this.filters.max);
+      slider.value = String(Math.min(Number(slider.max), Math.max(Number(slider.min), selectedMax || 0)));
+      if (sliderLabel) sliderLabel.textContent = money(slider.value);
+    }
   },
 
   updateHours() {
@@ -1672,7 +1679,7 @@ const Customer = {
     if (contentEl) {
       contentEl.innerHTML = `
         <div class="detail-layout">
-          <div class="detail-art">${image ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(p.name)}" loading="lazy">` : escapeHTML(p.icon || '✦')}</div>
+          <div class="detail-art">${image ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(p.name)}" loading="lazy" referrerpolicy="no-referrer">` : escapeHTML(p.icon || '✦')}</div>
           <div>
             <div class="meta">${escapeHTML(p.brand)} · ${escapeHTML(p.model)} · ${escapeHTML(p.category)}</div>
             <h2>${escapeHTML(p.name)}</h2>
@@ -1736,7 +1743,7 @@ const Customer = {
       <div class="cart-items">${items.map(({ line, product }) => {
         const image = safeURL(product.image);
         return `<article class="cart-item">
-          <div class="cart-thumb">${image ? `<img src="${escapeHTML(image)}" alt="" loading="lazy">` : escapeHTML(product.icon || '▣')}</div>
+          <div class="cart-thumb">${image ? `<img src="${escapeHTML(image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : escapeHTML(product.icon || '▣')}</div>
           <div class="cart-product"><strong>${escapeHTML(product.name)}</strong><span>${escapeHTML(product.brand)} · ${escapeHTML(money(product.price))} each</span>
             <div class="cart-controls">
               <button class="btn small outline" data-cart-action="decrease" data-id="${escapeHTML(product.id)}" aria-label="Decrease ${escapeHTML(product.name)} quantity">−</button>
@@ -1854,6 +1861,11 @@ const Customer = {
   },
 
   inquiry(type = 'General support', item = '') {
+    const status = document.querySelector('#inquiryFormStatus');
+    if (status) {
+      status.className = 'form-status';
+      status.textContent = '';
+    }
     const typeEl = document.querySelector('#inqType');
     if (typeEl) typeEl.value = type;
     const sel = document.querySelector('#inqProduct');
@@ -2440,6 +2452,13 @@ async function showAdmin() {
 
 function setFilter(key, value) {
   UI.filters[key] = value;
+  if (key === 'max') {
+    const slider = document.querySelector('#priceSlider');
+    if (slider) {
+      const selectedMax = value === '' ? Number(slider.max) : Number(value);
+      slider.value = String(Math.min(Number(slider.max), Math.max(Number(slider.min), selectedMax || 0)));
+    }
+  }
   syncCatalogURL();
   UI.renderProducts();
 }
@@ -2493,7 +2512,7 @@ function requestAdmin() {
   const pinInput = document.querySelector('#pinInput');
   if (pinInput) pinInput.value = '';
   const mfaInput = document.querySelector('#mfaInput');
-  if (mfaInput) mfaInput.value = '';
+  if (mfaInput) { mfaInput.value = ''; mfaInput.required = false; }
   const pinStep = document.querySelector('#pinStep');
   const mfaStep = document.querySelector('#mfaStep');
   if (pinStep) pinStep.style.display = 'block';
@@ -2513,6 +2532,19 @@ function requestAdmin() {
 }
 
 function initApp() {
+document.querySelectorAll('.category-card img').forEach(image => {
+  image.addEventListener('error', () => {
+    const card = image.closest('.category-card');
+    if (!card) return;
+    const fallback = document.createElement('span');
+    fallback.className = 'category-art-fallback';
+    fallback.setAttribute('aria-hidden', 'true');
+    fallback.textContent = CONFIG.icons[card.dataset.category] || '✦';
+    image.remove();
+    card.prepend(fallback);
+  }, { once: true });
+});
+
 // Global Activity Tracker for Inactivity Timeout
 ['click', 'keydown', 'mousemove', 'scroll'].forEach(evt => {
   window.addEventListener(evt, () => {
@@ -2546,6 +2578,8 @@ document.querySelector('#pinForm').onsubmit = async e => {
       const mfaStep = document.querySelector('#mfaStep');
       if (pinStep) pinStep.style.display = 'none';
       if (mfaStep) mfaStep.style.display = 'block';
+      const mfaInput = document.querySelector('#mfaInput');
+      if (mfaInput) mfaInput.required = true;
       setTimeout(() => document.querySelector('#mfaInput')?.focus(), 50);
       Toast.show('Please enter your 2-factor authentication code.');
     } else if (res.lockedOut) {
@@ -2588,7 +2622,15 @@ document.querySelector('#mfaBackBtn')?.addEventListener('click', () => {
   const mfaStep = document.querySelector('#mfaStep');
   if (pinStep) pinStep.style.display = 'block';
   if (mfaStep) mfaStep.style.display = 'none';
+  const mfaInput = document.querySelector('#mfaInput');
+  if (mfaInput) mfaInput.required = false;
   AuthService.pendingAuth = null;
+});
+
+document.querySelector('#mfaInput')?.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  document.querySelector('#mfaSubmitBtn')?.click();
 });
 
 ['adminEntry', 'footerAdmin'].forEach(id => {
@@ -2789,11 +2831,6 @@ document.querySelector('#passportBtn').onclick = () => {
 // Customer Inquiry Submission with Rate Limiting & Input Validation
 document.querySelector('#inquiryForm').onsubmit = async e => {
   e.preventDefault();
-  if (InquiryLimiter.isRateLimited()) {
-    Toast.show('You have submitted multiple requests recently. Please wait a minute before trying again.', 'error');
-    return;
-  }
-
   const itemId = document.querySelector('#inqProduct').value;
   const item = [...Store.data.products, ...Store.data.services].find(x => x.id === itemId);
   const inquiry = {
@@ -2809,6 +2846,10 @@ document.querySelector('#inquiryForm').onsubmit = async e => {
 
   if (!Validator.isSafeInquiry(inquiry)) {
     Toast.show('Please complete all required fields with valid input.', 'error');
+    return;
+  }
+  if (InquiryLimiter.isRateLimited()) {
+    Toast.show('You have submitted multiple requests recently. Please wait a minute before trying again.', 'error');
     return;
   }
 
@@ -3182,6 +3223,7 @@ document.querySelectorAll('dialog').forEach(d => {
   if (d.id === 'pinDialog') d.addEventListener('close', () => {
     document.querySelector('#pinInput').value = '';
     document.querySelector('#mfaInput').value = '';
+    document.querySelector('#mfaInput').required = false;
     AuthService.pendingAuth = null;
   });
 });
@@ -3211,12 +3253,22 @@ const mainLinks = document.querySelector('#mainLinks');
 const mobileSearchToggle = document.querySelector('#mobileSearchToggle');
 mobileSearchToggle?.addEventListener('click', () => {
   const open = document.querySelector('#nav')?.classList.toggle('search-open');
+  if (open) {
+    mainLinks?.classList.remove('open');
+    menuToggle?.setAttribute('aria-expanded', 'false');
+    menuToggle?.setAttribute('aria-label', 'Open navigation menu');
+  }
   mobileSearchToggle.setAttribute('aria-expanded', String(!!open));
   mobileSearchToggle.setAttribute('aria-label', open ? 'Hide product search' : 'Show product search');
   if (open) document.querySelector('#navSearch')?.focus();
 });
 menuToggle?.addEventListener('click', () => {
   const open = menuToggle.getAttribute('aria-expanded') !== 'true';
+  if (open) {
+    document.querySelector('#nav')?.classList.remove('search-open');
+    mobileSearchToggle?.setAttribute('aria-expanded', 'false');
+    mobileSearchToggle?.setAttribute('aria-label', 'Show product search');
+  }
   menuToggle.setAttribute('aria-expanded', String(open));
   menuToggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
   mainLinks?.classList.toggle('open', open);
@@ -3226,6 +3278,32 @@ mainLinks?.querySelectorAll('a').forEach(link => link.addEventListener('click', 
   menuToggle?.setAttribute('aria-expanded', 'false');
   menuToggle?.setAttribute('aria-label', 'Open navigation menu');
 }));
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  mainLinks?.classList.remove('open');
+  document.querySelector('#nav')?.classList.remove('search-open');
+  menuToggle?.setAttribute('aria-expanded', 'false');
+  menuToggle?.setAttribute('aria-label', 'Open navigation menu');
+  mobileSearchToggle?.setAttribute('aria-expanded', 'false');
+  mobileSearchToggle?.setAttribute('aria-label', 'Show product search');
+});
+
+const sectionLinks = new Map(['home', 'catalog', 'brands', 'build-pc', 'services'].map(id => [
+  id, document.querySelector(`#mainLinks a[href="#${id}"]`)
+]).filter(([, link]) => link));
+if ('IntersectionObserver' in window) {
+  const navObserver = new IntersectionObserver(entries => {
+    const current = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+    if (!current) return;
+    sectionLinks.forEach(link => link.removeAttribute('aria-current'));
+    sectionLinks.get(current.target.id)?.setAttribute('aria-current', 'location');
+  }, { rootMargin: '-20% 0px -65% 0px', threshold: [0, 0.25, 0.5, 0.75] });
+  sectionLinks.forEach((_, id) => {
+    const section = document.getElementById(id);
+    if (section) navObserver.observe(section);
+  });
+}
 
 window.addEventListener('scroll', () => {
   const nav = document.querySelector('#nav');
