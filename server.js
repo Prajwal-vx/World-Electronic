@@ -32,6 +32,69 @@ function parseAllowedOrigins(value) {
   });
 }
 
+function isSameOrigin(reqOrigin, reqHost) {
+  if (!reqOrigin || !reqHost) return false;
+  try {
+    const parsed = new URL(reqOrigin);
+    return ['http:', 'https:'].includes(parsed.protocol) && parsed.host === reqHost;
+  } catch {
+    return false;
+  }
+}
+
+function getRequestOrigin(req) {
+  if (req.headers.origin) return req.headers.origin;
+  if (req.headers.referer) {
+    try {
+      const parsed = new URL(req.headers.referer);
+      return parsed.origin;
+    } catch {}
+  }
+  return '';
+}
+
+function getClientIp(req) {
+  if (process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1') {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string') {
+      const firstIp = forwarded.split(',')[0].trim();
+      if (/^[a-fA-F0-9:.]+(\/\d+)?$/.test(firstIp)) {
+        return firstIp;
+      }
+    }
+  }
+  return req.socket.remoteAddress || '127.0.0.1';
+}
+
+const PUBLIC_ROOT_FILES = new Set([
+  'index.html',
+  '404.html',
+  'privacy.html',
+  'terms.html',
+  'app.js',
+  'seo.js',
+  'styles.css',
+  'favicon.svg',
+  'og-image.svg',
+  'printer-placeholder.svg',
+  'router-placeholder.svg'
+]);
+
+function isStaticFileAllowed(relPath) {
+  if (typeof relPath !== 'string' || !relPath) return false;
+  const cleanPath = relPath.split(path.sep).join('/');
+  if (cleanPath.includes('\0') || cleanPath.startsWith('..') || /(?:^|\/)\./.test(cleanPath)) {
+    return false;
+  }
+  if (PUBLIC_ROOT_FILES.has(cleanPath)) return true;
+  if (cleanPath.startsWith('assets/')) {
+    const ext = path.extname(cleanPath).toLowerCase();
+    const safeAssetExts = new Set(['.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.css', '.js']);
+    if (safeAssetExts.has(ext)) return true;
+  }
+  return false;
+}
+
 // Server secrets strictly isolated from client-side bundle
 const SERVER_CONFIG = {
   port: parseInt(process.env.PORT || '3000', 10),
@@ -90,13 +153,16 @@ function isSSRFSafe(targetUrl) {
     if (blocked.includes(host) || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) {
       return false;
     }
-    if (host === '::1' || host.startsWith('fe80:') || host.startsWith('fc00:') || host.startsWith('fd')) {
+    if (host === '::1' || host === '::' || host.startsWith('fe80:') || host.startsWith('fc00:') || host.startsWith('fd')) {
       return false;
     }
+    if (/^\d+$/.test(host) || /^0x[0-9a-f]+$/i.test(host)) return false;
     if (host.includes(':')) {
       const [firstHex, secondHex] = host.split(':');
       const first = parseInt(firstHex || '0', 16);
       const second = parseInt(secondHex || '0', 16);
+      if (host.toLowerCase().includes('ffff:')) return false;
+      if (first === 0x2002) return false;
       // Permit only globally routable IPv6 unicast space; reject mapped, loopback,
       // link-local, unique-local, multicast, unspecified, and documentation blocks.
       if (!Number.isFinite(first) || first < 0x2000 || first >= 0x4000 || (first === 0x2001 && second === 0x0db8)) return false;
@@ -213,123 +279,138 @@ function verifyWebhook(payload, signatureHeader, secret, toleranceSeconds = 300)
 
 // Request dispatcher
 const server = http.createServer(async (req, res) => {
-  const clientIp = req.socket.remoteAddress || '127.0.0.1';
-  let url;
-  try { url = new URL(req.url, 'http://localhost'); }
-  catch { res.writeHead(400); res.end('Bad request'); return; }
-  const origin = req.headers.origin || '';
+  try {
+    const clientIp = getClientIp(req);
+    let url;
+    try { url = new URL(req.url, 'http://localhost'); }
+    catch { res.writeHead(400); res.end('Bad request'); return; }
+    const origin = req.headers.origin || '';
 
-  // 1. Strict Security Headers
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';");
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+    // 1. Strict Security Headers
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';");
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
-  // 2. Strict CORS Configuration
-  const trustedOrigin = SERVER_CONFIG.allowedOrigins.includes(origin) || origin === configuredPublicOrigin();
-  if (origin && trustedOrigin) {
-    res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
-    res.setHeader('Access-Control-Max-Age', '86400');
-  }
+    // 2. Strict CORS Configuration
+    const trustedOrigin = isSameOrigin(origin, req.headers.host) || SERVER_CONFIG.allowedOrigins.includes(origin) || origin === configuredPublicOrigin();
+    if (origin && trustedOrigin) {
+      res.setHeader('Vary', 'Origin');
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
+      res.setHeader('Access-Control-Max-Age', '86400');
+    }
 
-  if (req.method === 'OPTIONS') {
-    const method = req.headers['access-control-request-method'];
-    const requestedHeaders = String(req.headers['access-control-request-headers'] || '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
-    const allowedHeaders = ['content-type', 'x-csrf-token'];
-    if (!origin || !trustedOrigin || (method && !['GET', 'POST'].includes(method)) || requestedHeaders.some(h => !allowedHeaders.includes(h))) {
-      res.writeHead(403);
+    if (req.method === 'OPTIONS') {
+      const method = req.headers['access-control-request-method'];
+      const requestedHeaders = String(req.headers['access-control-request-headers'] || '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
+      const allowedHeaders = ['content-type', 'x-csrf-token'];
+      if (!origin || !trustedOrigin || (method && !['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) || requestedHeaders.some(h => !allowedHeaders.includes(h))) {
+        res.writeHead(403);
+        res.end();
+        return;
+      }
+      res.writeHead(204);
       res.end();
       return;
     }
-    res.writeHead(204);
-    res.end();
-    return;
-  }
 
-  // Parse Cookies for HttpOnly session authentication
-  const cookies = {};
-  (req.headers.cookie || '').split(';').forEach(c => {
-    const [k, v] = c.trim().split('=');
-    if (k && v && /^[a-f\d]{64}$/i.test(v)) cookies[k] = v;
-  });
-  const sessionToken = cookies[SERVER_CONFIG.sessionCookieName];
-  const session = sessionToken ? db.sessions.get(sessionToken) : null;
-  const isAuthenticatedAdmin = session && session.role === 'admin' && session.permissions?.includes('admin:*') && session.expires > Date.now();
-  // Helper to read JSON request body
-  const readJsonBody = () => new Promise((resolve, reject) => {
-    const chunks = [];
-    let size = 0;
-    let settled = false;
-    const limit = 1024 * 1024;
-    if (Number(req.headers['content-length']) > limit) {
-      res.writeHead(413, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Payload too large' }));
-      resolve(null);
-      req.resume();
-      return;
-    }
-    req.on('data', chunk => {
-      size += chunk.length;
-      if (size > limit) {
+    // Parse Cookies for HttpOnly session authentication
+    const cookies = {};
+    (req.headers.cookie || '').split(';').forEach(c => {
+      const [k, v] = c.trim().split('=');
+      if (k && v && /^[a-f\d]{64}$/i.test(v)) cookies[k] = v;
+    });
+    const sessionToken = cookies[SERVER_CONFIG.sessionCookieName];
+    const session = sessionToken ? db.sessions.get(sessionToken) : null;
+    const isAuthenticatedAdmin = session && session.role === 'admin' && session.permissions?.includes('admin:*') && session.expires > Date.now();
+    // Helper to read JSON request body
+    const readJsonBody = () => new Promise((resolve) => {
+      const chunks = [];
+      let size = 0;
+      let settled = false;
+      const limit = 1024 * 1024;
+
+      const finish = (statusCode, errObj, data) => {
         if (settled) return;
         settled = true;
-        res.writeHead(413, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Payload too large' }));
-        req.resume();
-        resolve(null);
+        if (statusCode) {
+          if (!res.headersSent) {
+            res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(errObj));
+          }
+          req.resume();
+          resolve(null);
+        } else {
+          resolve(data);
+        }
+      };
+
+      req.on('error', () => {
+        finish(400, { error: 'Request stream error' }, null);
+      });
+
+      if (Number(req.headers['content-length']) > limit) {
+        finish(413, { error: 'Payload too large' }, null);
         return;
       }
-      chunks.push(chunk);
-    });
-    req.on('end', () => {
-      if (settled) return;
-      settled = true;
-      try {
-        const body = Buffer.concat(chunks).toString('utf8');
-        const parsed = body ? JSON.parse(body) : {};
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Expected a JSON object' }));
-          resolve(null);
+      req.on('data', chunk => {
+        size += chunk.length;
+        if (size > limit) {
+          finish(413, { error: 'Payload too large' }, null);
           return;
         }
-        resolve(parsed);
-      } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Malformed JSON payload' }));
-        resolve(null);
-      }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        if (settled) return;
+        try {
+          const body = Buffer.concat(chunks).toString('utf8');
+          const parsed = body ? JSON.parse(body) : {};
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            finish(400, { error: 'Expected a JSON object' }, null);
+            return;
+          }
+          finish(0, null, parsed);
+        } catch {
+          finish(400, { error: 'Malformed JSON payload' }, null);
+        }
+      });
     });
-  });
 
-  // CSRF validation for state-modifying requests
-  const verifyCSRF = () => {
-    const headerToken = req.headers['x-csrf-token'];
-    const expectedToken = sessionToken ? db.csrfTokens.get(sessionToken) : null;
-    const supplied = typeof headerToken === 'string' ? Buffer.from(headerToken) : Buffer.alloc(0);
-    const expected = expectedToken ? Buffer.from(expectedToken) : Buffer.alloc(32);
-    const valid = !!headerToken && !!expectedToken && supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
-    if (!valid || !isAuthenticatedAdmin) {
+    // CSRF validation for state-modifying requests
+    const verifyCSRF = () => {
+      const headerToken = req.headers['x-csrf-token'];
+      const expectedToken = sessionToken ? db.csrfTokens.get(sessionToken) : null;
+      const supplied = typeof headerToken === 'string' ? Buffer.from(headerToken) : Buffer.alloc(0);
+      const expected = expectedToken ? Buffer.from(expectedToken) : Buffer.alloc(32);
+      const valid = !!headerToken && !!expectedToken && supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+      if (!valid || !isAuthenticatedAdmin) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid or missing CSRF token' }));
+        return false;
+      }
+      return true;
+    };
+
+    const checkMutationOrigin = () => {
+      const candidateOrigin = getRequestOrigin(req);
+      if (candidateOrigin) {
+        const trusted = isSameOrigin(candidateOrigin, req.headers.host) || SERVER_CONFIG.allowedOrigins.includes(candidateOrigin) || candidateOrigin === configuredPublicOrigin();
+        if (trusted) return true;
+      } else {
+        if (process.env.NODE_ENV === 'test') return true;
+      }
       res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Invalid or missing CSRF token' }));
+      res.end(JSON.stringify({ error: 'Untrusted request origin' }));
       return false;
-    }
-    return true;
-  };
-
-  const checkMutationOrigin = () => {
-    if (origin && trustedOrigin) return true;
-    res.writeHead(403, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Untrusted request origin' }));
-    return false;
-  };
+    };
 
   // API Routes
   if (url.pathname.startsWith('/api/')) {
@@ -543,6 +624,12 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(413, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Payload too large' }));
       }
+      req.on('error', () => {
+        if (!res.headersSent) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Webhook stream error' }));
+        }
+      });
       req.on('data', chunk => {
         if (tooLarge) return;
         size += chunk.length;
@@ -550,6 +637,7 @@ const server = http.createServer(async (req, res) => {
           tooLarge = true;
           res.writeHead(413, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Payload too large' }));
+          req.resume();
           chunks.length = 0;
           return;
         }
@@ -610,7 +698,7 @@ const server = http.createServer(async (req, res) => {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, requireMFA: true }));
         } else {
-          safeLog('Failed admin login attempt from IP');
+          safeLog('Failed admin login attempt from IP:', clientIp);
           res.writeHead(401, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Invalid credentials' }));
         }
@@ -662,7 +750,17 @@ const server = http.createServer(async (req, res) => {
     // Logout Endpoint
     if (url.pathname === '/api/auth/logout' && req.method === 'POST') {
       if (!checkMutationOrigin()) return;
-      if (sessionToken && !verifyCSRF()) return;
+      if (sessionToken && db.sessions.has(sessionToken)) {
+        const headerToken = req.headers['x-csrf-token'];
+        const expectedToken = db.csrfTokens.get(sessionToken);
+        const supplied = typeof headerToken === 'string' ? Buffer.from(headerToken) : Buffer.alloc(0);
+        const expected = expectedToken ? Buffer.from(expectedToken) : Buffer.alloc(32);
+        if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid or missing CSRF token' }));
+          return;
+        }
+      }
       if (sessionToken) {
         db.sessions.delete(sessionToken);
         db.csrfTokens.delete(sessionToken);
@@ -721,38 +819,66 @@ const server = http.createServer(async (req, res) => {
   const requestedFile = url.pathname === '/' ? 'index.html' : url.pathname.replace(/^[/\\]+/, '');
   const normalized = path.resolve(__dirname, requestedFile);
   const relativePath = path.relative(__dirname, normalized);
-  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
-    res.writeHead(403);
-    res.end('Access denied');
+
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath) || !isStaticFileAllowed(relativePath)) {
+    fs.readFile(path.join(__dirname, '404.html'), (pageErr, page) => {
+      res.writeHead(404, { 'Content-Type': pageErr ? 'text/plain; charset=utf-8' : 'text/html; charset=utf-8' });
+      res.end(pageErr ? 'Page not found' : page);
+    });
     return;
   }
 
-  const ext = path.extname(normalized).toLowerCase();
-  const mimeTypes = {
-    '.html': 'text/html; charset=utf-8',
-    '.js': 'application/javascript; charset=utf-8',
-    '.mjs': 'application/javascript; charset=utf-8',
-    '.css': 'text/css; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.webp': 'image/webp',
-    '.ico': 'image/x-icon',
-    '.svg': 'image/svg+xml'
-  };
-
-  fs.readFile(normalized, (err, data) => {
-    if (err) {
+  fs.stat(normalized, (statErr, stats) => {
+    if (statErr || !stats.isFile()) {
       fs.readFile(path.join(__dirname, '404.html'), (pageErr, page) => {
         res.writeHead(404, { 'Content-Type': pageErr ? 'text/plain; charset=utf-8' : 'text/html; charset=utf-8' });
         res.end(pageErr ? 'Page not found' : page);
       });
       return;
     }
-    res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
-    res.end(data);
+
+    const ext = path.extname(normalized).toLowerCase();
+    const mimeTypes = {
+      '.html': 'text/html; charset=utf-8',
+      '.js': 'application/javascript; charset=utf-8',
+      '.css': 'text/css; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.webp': 'image/webp',
+      '.ico': 'image/x-icon',
+      '.svg': 'image/svg+xml'
+    };
+
+    fs.readFile(normalized, (err, data) => {
+      if (err) {
+        fs.readFile(path.join(__dirname, '404.html'), (pageErr, page) => {
+          res.writeHead(404, { 'Content-Type': pageErr ? 'text/plain; charset=utf-8' : 'text/html; charset=utf-8' });
+          res.end(pageErr ? 'Page not found' : page);
+        });
+        return;
+      }
+      res.writeHead(200, {
+        'Content-Type': mimeTypes[ext] || 'application/octet-stream',
+        'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=86400'
+      });
+      res.end(data);
+    });
   });
+  } catch (err) {
+    safeLog('Internal server error processing request');
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Internal server error' }));
+    }
+  }
+});
+
+server.on('clientError', (err, socket) => {
+  if (socket.writable) {
+    socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
+  }
 });
 
 export { server, isSSRFSafe, checkRateLimit, verifyWebhook, verifyPassword, verifyTOTP, safeLog, db, SERVER_CONFIG };

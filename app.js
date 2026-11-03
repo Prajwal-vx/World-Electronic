@@ -270,6 +270,16 @@ const Security = {
         return false;
       }
       if (/^\d+$/.test(host) || /^0x[0-9a-f]+$/i.test(host)) return false;
+      if (host.includes(':')) {
+        const parts = host.split(':');
+        const firstHex = parts[0] || '0';
+        const secondHex = parts[1] || '0';
+        const first = parseInt(firstHex, 16);
+        const second = parseInt(secondHex, 16);
+        if (host.toLowerCase().includes('ffff:')) return false;
+        if (first === 0x2002) return false;
+        if (!Number.isFinite(first) || first < 0x2000 || first >= 0x4000 || (first === 0x2001 && second === 0x0db8)) return false;
+      }
 
       const ipv4Parts = host.split('.').map(Number);
       if (ipv4Parts.length === 4 && ipv4Parts.every(n => Number.isInteger(n) && n >= 0 && n <= 255)) {
@@ -2031,9 +2041,12 @@ const Admin = {
     const tableEl = document.querySelector('#inquiryTable');
     if (!tableEl) return;
 
-    tableEl.innerHTML = rows.map(i => `
+    tableEl.innerHTML = rows.map(i => {
+      const parsedTime = Date.parse(i.time || '');
+      const formattedTime = Number.isFinite(parsedTime) ? new Date(parsedTime).toLocaleString() : 'Recent';
+      return `
       <tr>
-        <td>${escapeHTML(new Date(i.time).toLocaleString())}</td>
+        <td>${escapeHTML(formattedTime)}</td>
         <td>
           ${escapeHTML(i.name)}
           <div class="meta">${escapeHTML(i.contact)}</div>
@@ -2054,7 +2067,8 @@ const Admin = {
           <button class="btn small danger" data-admin-action="deleteInquiry" data-id="${escapeHTML(i.id)}">Delete</button>
         </td>
       </tr>
-    `).join('') || '<tr><td colspan="6">No inquiries yet.</td></tr>';
+    `;
+    }).join('') || '<tr><td colspan="6">No inquiries yet.</td></tr>';
   },
 
   settings() {

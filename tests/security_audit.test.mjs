@@ -29,7 +29,7 @@ async function runTests() {
       console.log(`[PASS] ${name}`);
       passed++;
     } catch (err) {
-      console.error(`[FAIL] ${name}:`, err.message);
+      console.error(`[FAIL] ${name}:`, err.message, err.cause);
       failed++;
     }
   }
@@ -418,11 +418,129 @@ async function runTests() {
     assert.equal(serverSecurity.verifyWebhook(payload, `t=${timestamp},v1=${signature}`, ''), false);
     assert.equal(serverSecurity.isSSRFSafe('http://[::ffff:7f00:1]/'), false);
     assert.equal(serverSecurity.isSSRFSafe('http://[fd00::1]/'), false);
+    assert.equal(serverSecurity.isSSRFSafe('http://[2002:7f00:1::]/'), false);
+    assert.equal(serverSecurity.isSSRFSafe('http://2130706433/'), false);
     assert.equal(serverSecurity.isSSRFSafe('https://example.com/image.png'), true);
     const rateKey = crypto.randomUUID();
     assert.equal(serverSecurity.checkRateLimit(rateKey, 'test', 1, 60000), true);
     assert.equal(serverSecurity.checkRateLimit(rateKey, 'test', 1, 60000), false);
     assert.equal(serverSecurity.SERVER_CONFIG.jwtSecret, undefined, 'No unused JWT secret should be generated');
+  });
+
+  // 24. In-Memory HTTP Server Security (Static File Protection, HSTS, Logout, CORS)
+  await testAsync('HTTP Server protects sensitive files and enforces security controls', async () => {
+    const { EventEmitter } = await import('node:events');
+
+    function dispatch(options) {
+      return new Promise((resolve) => {
+        const req = new EventEmitter();
+        req.method = options.method || 'GET';
+        req.url = options.url || '/';
+        req.headers = Object.fromEntries(
+          Object.entries(options.headers || {}).map(([k, v]) => [k.toLowerCase(), String(v)])
+        );
+        req.socket = { remoteAddress: '127.0.0.1' };
+        req.resume = () => {};
+
+        let statusCode = 200;
+        const resHeaders = {};
+        const resChunks = [];
+
+        const res = new EventEmitter();
+        res.headersSent = false;
+        res.setHeader = (k, v) => { resHeaders[k.toLowerCase()] = v; };
+        res.getHeader = (k) => resHeaders[k.toLowerCase()];
+        res.writeHead = (code, headersObj) => {
+          statusCode = code;
+          res.headersSent = true;
+          if (headersObj) {
+            for (const [hk, hv] of Object.entries(headersObj)) {
+              resHeaders[hk.toLowerCase()] = hv;
+            }
+          }
+        };
+        res.write = (chunk) => {
+          if (chunk) resChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        };
+        res.end = (chunk) => {
+          if (chunk) resChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+          res.headersSent = true;
+          resolve({
+            status: statusCode,
+            headers: {
+              get: (k) => resHeaders[k.toLowerCase()]
+            },
+            text: () => Promise.resolve(Buffer.concat(resChunks).toString('utf8')),
+            json: () => Promise.resolve(JSON.parse(Buffer.concat(resChunks).toString('utf8')))
+          });
+        };
+
+        serverSecurity.server.emit('request', req, res);
+
+        if (options.body !== undefined && options.body !== null) {
+          const payload = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
+          if (!req.headers['content-length']) {
+            req.headers['content-length'] = String(Buffer.byteLength(payload));
+          }
+          req.emit('data', Buffer.from(payload));
+        }
+        req.emit('end');
+      });
+    }
+
+    // Sensitive files must NOT be accessible (404 response)
+    const sensitiveFiles = [
+      '/.env',
+      '/.env.example',
+      '/server.js',
+      '/package.json',
+      '/scripts/generate-admin-credentials.mjs',
+      '/tests/security_audit.test.mjs',
+      '/.git/config',
+      '/.git/HEAD',
+      '/SECURITY.md'
+    ];
+    for (const file of sensitiveFiles) {
+      const res = await dispatch({ url: file });
+      assert.equal(res.status, 404, `Sensitive file ${file} must return 404, got ${res.status}`);
+    }
+
+    // Path traversal attempts must return 404
+    const traversalRes = await dispatch({ url: '/../../package.json' });
+    assert.equal(traversalRes.status, 404, 'Path traversal must be rejected with 404');
+
+    // Legitimate public assets must return 200 with strict security headers
+    const publicFiles = ['/', '/index.html', '/styles.css', '/app.js', '/favicon.svg'];
+    for (const file of publicFiles) {
+      const res = await dispatch({ url: file });
+      assert.equal(res.status, 200, `Public file ${file} must return 200`);
+      assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+      assert.equal(res.headers.get('x-frame-options'), 'DENY');
+      assert.ok(res.headers.get('strict-transport-security'), 'HSTS header must be present');
+      assert.ok(res.headers.get('content-security-policy'), 'CSP header must be present');
+    }
+
+    // Logout with expired or missing session must successfully clear cookie with Max-Age=0
+    const logoutRes = await dispatch({
+      method: 'POST',
+      url: '/api/auth/logout',
+      headers: { origin: 'http://localhost:3000' }
+    });
+    assert.equal(logoutRes.status, 200, 'Logout should succeed even without active session');
+    const setCookie = logoutRes.headers.get('set-cookie');
+    assert.ok(setCookie && setCookie.includes('Max-Age=0'), 'Set-Cookie must clear session cookie');
+
+    // Cross-origin mutation attempt from untrusted origin must be rejected with 403
+    const untrustedRes = await dispatch({
+      method: 'POST',
+      url: '/api/inquiries',
+      headers: {
+        origin: 'https://malicious-attacker.example',
+        'content-type': 'application/json'
+      },
+      body: { name: 'Attacker', contact: 'test@evil.com', message: 'Spam' }
+    });
+    assert.equal(untrustedRes.status, 403, 'Untrusted origin mutation must return 403 Forbidden');
   });
 
   console.log(`\n--- TEST SUITE SUMMARY: ${passed} PASSED, ${failed} FAILED ---`);
